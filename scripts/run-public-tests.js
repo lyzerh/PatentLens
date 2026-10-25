@@ -16,7 +16,15 @@ const files = [
 ];
 const result = spawnSync(process.execPath, ["--test", ...files], {
   stdio: "inherit",
-  env: { ...process.env, XAI_API_KEY: "", PATENT_PILOT_DATA: "" }
+  env: {
+    ...process.env,
+    XAI_API_KEY: "",
+    PATENT_PILOT_DATA: "",
+    PATENT_THERMAL_DATA: "",
+    ...(process.env.PATENT_CI_NETWORK_GUARD === "1"
+      ? { NODE_OPTIONS: "--import=./scripts/ci-network-guard.js" }
+      : {})
+  }
 });
 if (result.error) throw result.error;
 process.exitCode = result.status ?? 1;

@@ -1,5 +1,7 @@
 # PatentLens v0.6.0 · AI Patent Intelligence Prototype
 
+[![Public CI](https://github.com/lyzerh/PatentLens/actions/workflows/ci.yml/badge.svg)](https://github.com/lyzerh/PatentLens/actions/workflows/ci.yml)
+
 [中文](#中文) | [English](#english)
 
 ## 中文

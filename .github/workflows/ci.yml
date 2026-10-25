@@ -1,0 +1,30 @@
+name: Public CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      XAI_API_KEY: ""
+      PATENT_PILOT_DATA: ""
+      PATENT_THERMAL_DATA: ""
+      PATENT_CI_NETWORK_GUARD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:public
