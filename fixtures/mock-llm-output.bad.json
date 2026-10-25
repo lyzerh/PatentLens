@@ -1,0 +1,38 @@
+{
+  "recordId": "DEMO-001",
+  "bibliographic": {
+    "publicationNumber": "SYNTHETIC-DEMO-001"
+  },
+  "family": {
+    "familyId": null,
+    "members": []
+  },
+  "technology": {
+    "domain": "Smartphone Technology"
+  },
+  "claimAnalysis": {
+    "independentClaims": ["Claim 1"],
+    "elements": [
+      {
+        "elementId": "E1",
+        "text": "unsupported inferred controller behavior",
+        "evidenceIds": ["EV99"]
+      }
+    ],
+    "technicalFeatures": [],
+    "confidence": 1.4
+  },
+  "intelligence": {
+    "problem": "The processor predicts every future workload",
+    "evidence": [
+      {
+        "evidenceId": "EV1",
+        "location": "claim-1",
+        "originalText": "the processor predicts every future workload"
+      }
+    ]
+  },
+  "review": {
+    "status": "unreviewed"
+  }
+}

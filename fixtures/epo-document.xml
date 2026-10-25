@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ep-patent-document PUBLIC "-//EPO//EP PATENT DOCUMENT//EN" "ep-patent-document.dtd">
+<ep-patent-document country="EP" doc-number="3633495" kind="A1" date-publ="20200408" lang="fr">
+  <SDOBI><B300><B320>20181001</B320></B300><B500><B540><B541>de</B541><B542>Synthetischer Titel</B542><B541>en</B541><B542>Synthetic voltage controller</B542><B541>fr</B541><B542>Contrôleur synthétique</B542></B540></B500><B700><B710><B711><snm>Synthetic Applicant</snm><address>Not an applicant name</address></B711></B710></B700></SDOBI>
+  <abstract lang="fr"><p>Résumé synthétique uniquement.</p></abstract>
+  <description lang="fr"><heading>DOMAINE TECHNIQUE</heading><p num="0001">Un contrôleur sélectionne une fréquence.</p><p num="0002">Un capteur mesure une charge.</p></description>
+  <claims lang="fr"><claim num="0001"><claim-text>Un contrôleur comprenant un capteur.</claim-text></claim><claim num="0002"><claim-text>Le contrôleur selon la revendication 1.</claim-text></claim></claims>
+  <claims lang="en"><claim num="0001"><claim-text>Official other-language synthetic text, do not merge.</claim-text></claim></claims>
+</ep-patent-document>

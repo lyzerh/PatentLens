@@ -1,0 +1,5 @@
+{
+  "recordId": "DEMO-001",
+  "synthetic": true,
+  "text": "Claim 1. A mobile processor power management method comprising: receiving a workload utilization value and a thermal state of a processor; selecting an operating point from a plurality of voltage and frequency operating points based on the workload utilization value; and adjusting a clock frequency and a supply voltage of the processor to the selected operating point. The method reduces power consumption while maintaining a target performance level."
+}

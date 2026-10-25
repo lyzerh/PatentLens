@@ -1,0 +1,73 @@
+{
+  "recordId": "DEMO-001",
+  "bibliographic": {
+    "publicationNumber": "SYNTHETIC-DEMO-001",
+    "title": "Synthetic processor power management example"
+  },
+  "family": {
+    "familyId": null,
+    "members": []
+  },
+  "technology": {
+    "domain": "Smartphone Technology",
+    "subsystem": "Processor Power Management",
+    "category": "Dynamic Performance Control",
+    "mechanism": "Utilization-based operating-point selection",
+    "tags": ["DVFS", "workload-aware"]
+  },
+  "claimAnalysis": {
+    "independentClaims": ["Claim 1"],
+    "elements": [
+      {
+        "elementId": "E1",
+        "text": "receiving workload utilization and thermal state",
+        "technicalRole": "control input",
+        "evidenceIds": ["EV1"]
+      },
+      {
+        "elementId": "E2",
+        "text": "selecting an operating point from voltage and frequency operating points",
+        "technicalRole": "decision mechanism",
+        "evidenceIds": ["EV2"]
+      },
+      {
+        "elementId": "E3",
+        "text": "adjusting clock frequency and supply voltage",
+        "technicalRole": "processor control",
+        "evidenceIds": ["EV3"]
+      }
+    ],
+    "technicalFeatures": [
+      "workload utilization is used to select an operating point",
+      "clock frequency and supply voltage are adjusted together"
+    ],
+    "confidence": 0.88
+  },
+  "intelligence": {
+    "problem": "Reduce processor power consumption while maintaining a target performance level",
+    "approach": "Select and apply a voltage-frequency operating point using workload utilization",
+    "technicalEffect": "Lower power consumption with a target performance level",
+    "evidence": [
+      {
+        "evidenceId": "EV1",
+        "location": "claim-1",
+        "originalText": "receiving a workload utilization value and a thermal state of a processor"
+      },
+      {
+        "evidenceId": "EV2",
+        "location": "claim-1",
+        "originalText": "selecting an operating point from a plurality of voltage and frequency operating points based on the workload utilization value"
+      },
+      {
+        "evidenceId": "EV3",
+        "location": "claim-1",
+        "originalText": "adjusting a clock frequency and a supply voltage of the processor to the selected operating point"
+      }
+    ]
+  },
+  "review": {
+    "status": "unreviewed",
+    "confidence": 0.88,
+    "notes": "Synthetic fixture for offline pipeline testing"
+  }
+}

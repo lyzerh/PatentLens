@@ -1,0 +1,46 @@
+[
+  {
+    "publicationNumber": "US20240053809A1",
+    "title": "Integrated circuit capable of performing dynamic voltage and frequency scaling operation based on workload and operating method thereof",
+    "assignee": "Samsung Electronics Co Ltd",
+    "country": "US", "priorityDate": "2022-08-12", "publicationDate": "2024-02-15",
+    "snippet": "研究笔记：监测共享缓冲区及内存响应等待时间，根据 workload 分类决定电压—频率缩放系数。",
+    "claimExcerpt": "at least one core configured to process an instruction according to a voltage-frequency level",
+    "tags": ["DVFS", "workload", "memory", "processor", "功耗", "处理器", "三星", "内存"],
+    "sourceUrl": "https://patents.google.com/patent/US20240053809A1/en",
+    "source": "seed", "capturedAt": "2026-10-02", "coverage": "claim_excerpt"
+  },
+  {
+    "publicationNumber": "US7685446B2",
+    "title": "Dynamic voltage scaling method of CPU using workload estimator and computer readable medium storing the method",
+    "assignee": "Samsung Electronics Co Ltd",
+    "country": "US", "priorityDate": "2006-02-03", "publicationDate": "2010-03-23",
+    "snippet": "研究笔记：对程序代码段进行 workload profiling，并从电压设置点组合中选出能量消耗较小的组合。",
+    "claimExcerpt": "selecting an optimal combination that consumes a least energy of the CPU based on the calculated workload estimators",
+    "tags": ["DVFS", "DVS", "CPU", "workload", "processor", "功耗", "处理器", "三星"],
+    "sourceUrl": "https://patents.google.com/patent/US7685446B2/en",
+    "source": "seed", "capturedAt": "2026-10-02", "coverage": "claim_excerpt"
+  },
+  {
+    "publicationNumber": "US20140063026A1",
+    "title": "Soc performing dynamic voltage and frequency scaling policies using 3d workload, and method using the same",
+    "assignee": "Samsung Electronics Co Ltd",
+    "country": "US", "priorityDate": "2012-09-04", "publicationDate": "2014-03-06",
+    "snippet": "研究笔记：CPU 根据 GPU 接收的 3D 输入数据调整 GPU 的频率和工作电压。",
+    "claimExcerpt": "a graphics processor unit (GPU) configured to receive three-dimensional (3D) input data",
+    "tags": ["DVFS", "GPU", "3D", "workload", "processor", "功耗", "处理器", "三星", "图形"],
+    "sourceUrl": "https://patents.google.com/patent/US20140063026A1/en",
+    "source": "seed", "capturedAt": "2026-10-02", "coverage": "claim_excerpt"
+  },
+  {
+    "publicationNumber": "US20240427405A1",
+    "title": "Dynamic voltage and frequency scaling (dvfs) controller, integrated circuit including the dvfs controller, and method of operating the dvfs controller",
+    "assignee": "Samsung Electronics Co Ltd",
+    "country": "US", "priorityDate": "2023-06-22", "publicationDate": "2024-12-26",
+    "snippet": "研究笔记：根据电源系统动态特性的共振频率控制 PMU 和 CMU，调整电压与工作频率。",
+    "claimExcerpt": "at least one subblock circuit configured to process an instruction",
+    "tags": ["DVFS", "PMU", "CMU", "resonance", "processor", "功耗", "处理器", "三星", "共振"],
+    "sourceUrl": "https://patents.google.com/patent/US20240427405A1/en",
+    "source": "seed", "capturedAt": "2026-10-02", "coverage": "claim_excerpt"
+  }
+]

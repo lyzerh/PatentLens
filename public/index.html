@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#eef2f6">
+  <meta name="description" content="专利检索、原文读取与 LLM 测试工具。">
+  <title data-i18n="search.static.1">专利测试工具</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+<link rel="stylesheet" href="/i18n/i18n.css"></head>
+<body data-appearance="glass" data-motion="on">
+  <a class="skip-link" href="#research-main" data-i18n="search.static.2">跳到研究工作区</a>
+  <header class="topbar">
+    <a class="brand" href="#research-main" data-i18n="search.static.3">专利测试工具</a>
+    <nav class="flow-nav" aria-label="测试流程" data-i18n-aria="search.attribute.1"><a class="active" href="#discover-stage" aria-current="step"><span data-i18n="search.static.5">01</span> <span data-i18n="search.static.4">检索</span></a><a href="#read-stage"><span data-i18n="search.static.7">02</span> <span data-i18n="search.static.6">原文</span></a><a href="#verify-stage"><span data-i18n="search.static.9">03</span> <span data-i18n="search.static.8">结果</span></a></nav>
+    <div class="top-actions"><a class="secondary" href="/pilot" data-i18n="search.static.10">组合分析</a><span id="connection-state" class="pill" data-i18n="search.static.11">API 未配置</span><button id="settings-open" class="secondary" data-i18n="search.static.12">API 设置</button></div>
+  </header>
+  <main id="research-main">
+    <section id="discover-stage" class="discovery" aria-labelledby="discover-heading">
+    <div class="stage-heading"><div class="stage-title"><span class="stage-number" data-i18n="search.static.13">01</span><h1 id="discover-heading" data-i18n="search.static.14">专利检索</h1></div></div>
+    <section class="search-panel" aria-label="专利检索" data-i18n-aria="search.attribute.2">
+      <form id="search-form">
+        <div class="search-main"><label class="search-query"><span data-i18n="search.static.15">关键词、检索式或专利编号</span><div class="search-input-wrap"><span aria-hidden="true" data-i18n="search.static.16">⌕</span><input id="query" value="DVFS" placeholder="例如 &quot;dynamic voltage&quot; workload 或 US20240053809A1" required="" maxlength="500" data-i18n-placeholder="search.attribute.3"></div></label>
+          <label><span data-i18n="search.static.17">检索来源</span><select id="source"><option value="epo" data-i18n="search.static.18">EPO · 免费 / EP</option><option value="google" data-i18n="search.static.19">Google Patents</option><option value="serpapi" data-i18n="search.static.20">SerpAPI · 需 Key</option><option value="seed" data-i18n="search.static.21">本地样本 · 4 条</option></select></label>
+          <button id="search-button" class="primary" type="submit" data-i18n="search.static.22">检索</button>
+        </div>
+        <details class="filters"><summary data-i18n="search.static.23">申请人、国家与日期筛选</summary><div class="filter-fields">
+          <label><span data-i18n="search.static.24">申请人</span><input id="assignee" placeholder="例如 Qualcomm" maxlength="150" data-i18n-placeholder="search.attribute.4"></label>
+          <label><span data-i18n="search.static.25">国家 / 地区</span><select id="country"><option value="" data-i18n="search.static.26">全部</option><option data-i18n="search.static.27">US</option><option data-i18n="search.static.28">CN</option><option data-i18n="search.static.29">TW</option><option data-i18n="search.static.30">KR</option><option data-i18n="search.static.31">JP</option><option data-i18n="search.static.32">EP</option><option data-i18n="search.static.33">WO</option></select></label>
+          <label><span data-i18n="search.static.34">公开日期 · 从</span><input id="after" type="date"></label><label><span data-i18n="search.static.35">公开日期 · 到</span><input id="before" type="date"></label>
+        </div></details>
+        <div id="search-key-wrap" class="hidden"><label><span data-i18n="search.static.36">SerpAPI 检索 Key</span><input id="search-key" type="password" autocomplete="off" placeholder="仅用于联网检索，与 LLM Key 分开" data-i18n-placeholder="search.attribute.5"></label></div>
+      </form>
+      <p id="search-notice" class="search-footer" data-i18n="search.static.37">检索无需 LLM Key。</p>
+      <details class="source-details"><summary data-i18n="search.static.38">来源与连接信息</summary><p id="retrieval-network" class="small-note" role="status" data-i18n="search.static.39">读取连接配置…</p><p id="source-attribution" class="small-note" data-i18n="search.static.40">来源：European Patent Office · Linked open EP data（CC BY 4.0）/ European Publication Server。仅限小规模偶发试验。</p><p id="search-details" class="small-note"></p></details>
+    </section>
+    <div id="global-message" class="message hidden" role="status" aria-live="polite"></div>
+      <section class="results-panel" aria-label="检索结果" data-i18n-aria="search.attribute.6">
+        <div class="panel-heading"><h3><span data-i18n="search.static.41">检索结果</span> <span class="panel-caption" data-i18n="search.static.42">未合并专利家族</span></h3><span id="result-count" class="mono" data-i18n="search.static.43">未检索</span></div>
+        <div id="results" class="results"><p class="empty compact" data-i18n="search.static.44">输入关键词或专利编号开始检索。</p></div>
+        <div id="pagination" class="pagination hidden"><button id="previous-page" class="secondary" disabled="" data-i18n="search.static.45">上一页</button><span id="page-label" data-i18n="search.static.46">第 1 页</span><button id="next-page" class="secondary" disabled="" data-i18n="search.static.47">下一页</button></div>
+        <div id="result-actions" class="result-actions hidden"><button id="export-search" class="text-button" disabled="" data-i18n="search.static.48">导出检索记录</button><a id="search-external" class="text-link hidden" target="_blank" rel="noreferrer" data-i18n="search.static.49">打开来源检索</a></div>
+      </section>
+    </section>
+    <section class="detail-panel" id="read-stage" aria-labelledby="read-heading">
+      <div class="stage-heading"><div class="stage-title"><span class="stage-number" data-i18n="search.static.50">02</span><h2 id="read-heading" data-i18n="search.static.51">原文与测试</h2></div></div>
+      <article class="document-surface">
+        <div class="document-heading"><div><div id="document-id" class="eyebrow"></div><h2 id="document-title" data-i18n="search.static.52">选择检索结果，或在下方粘贴原文</h2><p id="document-meta"></p></div>
+          <button id="manual-input" class="secondary" data-i18n="search.static.53">新建手动输入</button></div>
+        <div id="document-notice" class="notice hidden"></div>
+        <div class="document-links"><a id="patent-external" class="text-link hidden" target="_blank" rel="noreferrer" data-i18n="search.static.54">查看原始专利</a>
+          <button id="fetch-live" class="text-button hidden" data-i18n="search.static.55">重新读取原文</button></div>
+        <div id="view-source" class="source-view" role="region" aria-label="专利原文" data-i18n-aria="search.attribute.7">
+          <div class="input-metadata"><label><span data-i18n="search.static.56">公开编号</span><input id="input-publication" placeholder="可选，例如 US20240053809A1" data-i18n-placeholder="search.attribute.8"></label><label><span data-i18n="search.static.57">标题</span><input id="input-title" placeholder="可选" data-i18n-placeholder="search.attribute.9"></label></div>
+          <div class="section-head"><label class="checkbox-label"><input id="include-claims" type="checkbox" checked=""> <span data-i18n="search.static.58">权利要求 · 纳入测试</span></label><select id="claim-selection" aria-label="选择权利要求" data-i18n-aria="search.attribute.10"><option value="all" data-i18n="search.static.59">全部权利要求</option></select></div>
+          <textarea id="text-claims" aria-label="Claims 原文" class="patent-text claims" placeholder="粘贴权利要求原文，保留编号。" data-i18n-placeholder="search.attribute.11" data-i18n-aria="search.attribute.12"></textarea>
+          <details class="extra-section"><summary data-i18n="search.static.60">摘要</summary><label class="checkbox-label"><input id="include-abstract" type="checkbox" checked=""> <span data-i18n="search.static.61">纳入测试</span></label><textarea id="text-abstract" aria-label="Abstract 原文" class="patent-text" placeholder="摘要原文" data-i18n-placeholder="search.attribute.13" data-i18n-aria="search.attribute.14"></textarea></details>
+          <details class="extra-section"><summary data-i18n="search.static.62">说明书</summary><label class="checkbox-label"><input id="include-description" type="checkbox"> <span data-i18n="search.static.63">纳入测试</span></label><textarea id="text-description" aria-label="Description 原文" class="patent-text" placeholder="说明书原文，保留段落编号。" data-i18n-placeholder="search.attribute.15" data-i18n-aria="search.attribute.16"></textarea></details>
+          <div class="input-footer"><span id="input-count" data-i18n="search.static.64">0 字符 · 尚无测试输入</span><button id="prompt-preview" class="text-button" data-i18n="search.static.65">查看本次提示词</button></div>
+        </div>
+        <footer class="experiment-bar"><div><strong id="test-mode" data-i18n="search.static.66">API 未配置</strong><span id="test-help" data-i18n="search.static.67">离线模拟免费；LLM 测试按服务商计费。</span></div>
+          <div class="experiment-actions"><button id="run-mock" class="secondary" data-i18n="search.static.68">离线模拟</button><button id="cancel-test" class="secondary hidden" data-i18n="search.static.69">取消</button><button id="run-test" class="primary" data-i18n="search.static.70">运行 LLM 测试</button><button id="export-run" class="secondary" disabled="" data-i18n="search.static.71">导出实验</button></div>
+        </footer>
+      </article>
+      <section id="verify-stage" class="verification" aria-labelledby="verify-heading">
+        <div class="stage-heading"><div class="stage-title"><span class="stage-number" data-i18n="search.static.72">03</span><h2 id="verify-heading" data-i18n="search.static.73">测试结果</h2></div></div>
+        <div class="verification-surface">
+          <div class="tablist" role="tablist" aria-label="实验结果" data-i18n-aria="search.attribute.17">
+            <button id="tab-analysis" class="tab active" data-tab="analysis" role="tab" aria-selected="true" aria-controls="view-analysis"><span data-i18n="search.static.74">抽取与校验</span> <span id="analysis-badge"></span></button>
+            <button id="tab-evidence" class="tab" data-tab="evidence" role="tab" aria-selected="false" aria-controls="view-evidence" tabindex="-1" data-i18n="search.static.75">证据核验</button>
+            <button id="tab-raw" class="tab" data-tab="raw" role="tab" aria-selected="false" aria-controls="view-raw" tabindex="-1" data-i18n="search.static.76">原始响应</button>
+          </div>
+          <div id="view-analysis" class="tab-view" role="tabpanel" aria-labelledby="tab-analysis"><p class="empty" data-i18n="search.static.77">运行测试后显示结果。</p></div>
+          <div id="view-evidence" class="tab-view hidden" role="tabpanel" aria-labelledby="tab-evidence"><p class="empty" data-i18n="search.static.78">尚无引文。</p></div>
+          <div id="view-raw" class="tab-view hidden" role="tabpanel" aria-labelledby="tab-raw"><p class="empty" data-i18n="search.static.79">尚无响应。</p></div>
+        </div>
+      </section>
+    </section>
+    <details class="ui-lab" id="ui-lab">
+      <summary id="lab-heading" data-i18n="search.static.80">界面性能测试</summary>
+      <div class="lab-controls"><div><span class="control-label" data-i18n="search.static.81">视觉效果</span><div class="appearance-switch" role="group" aria-label="视觉效果" data-i18n-aria="search.attribute.18"><button data-appearance="glass" aria-pressed="true" data-i18n="search.static.82">液态玻璃</button><button data-appearance="light" aria-pressed="false" data-i18n="search.static.83">轻量磨砂</button><button data-appearance="solid" aria-pressed="false" data-i18n="search.static.84">纯净实底</button></div></div><label class="checkbox-label"><input type="checkbox" id="reduce-motion"> <span data-i18n="search.static.85">减少动效</span></label><p id="appearance-note" class="small-note" role="status" data-i18n="search.static.86">正在检查浏览器效果支持…</p></div>
+      <div class="lab-stats" aria-label="上次测试数据" data-i18n-aria="search.attribute.19"><div><span data-i18n="search.static.87">平均帧间隔</span><strong id="perf-frame"><span data-i18n="search.static.88">—</span><small data-i18n="search.static.89"> ms</small></strong></div><div><span data-i18n="search.static.90">P95 帧间隔</span><strong id="perf-p95"><span data-i18n="search.static.91">—</span><small data-i18n="search.static.92"> ms</small></strong></div><div><span data-i18n="search.static.93">长任务 / ≥50ms</span><strong id="perf-long" data-i18n="search.static.94">—</strong></div><div><span data-i18n="search.static.95">测试期间页面错误</span><strong id="perf-errors" data-i18n="search.static.96">—</strong></div></div>
+      <div class="lab-actions"><button class="primary" id="benchmark-start" data-i18n="search.static.97">测试当前模式 · 约 5 秒</button><button class="secondary" id="benchmark-compare" data-i18n="search.static.98">对比三种模式 · 约 15 秒</button><button class="secondary hidden" id="benchmark-cancel" data-i18n="search.static.99">停止测试</button><button class="text-button" id="benchmark-export" disabled="" data-i18n="search.static.100">导出性能记录 ↗</button></div>
+      <p id="benchmark-status" class="small-note" role="status" aria-live="polite" data-i18n="search.static.101">本地合成数据测试，无 API 调用。</p>
+      <div id="benchmark-preview" class="benchmark-preview hidden" aria-label="合成测试场景" data-i18n-aria="search.attribute.20"><div id="benchmark-viewport" class="benchmark-viewport" tabindex="0" aria-label="合成文献滚动区" data-i18n-aria="search.attribute.21"><div class="preview-label" data-i18n="search.static.102">合成测试场景 · 不是真实检索结果</div><div id="benchmark-fixture"></div></div></div>
+      <div id="benchmark-results" class="benchmark-results hidden"></div>
+      <p class="lab-method" data-i18n="search.static.103">120 张合成卡片、60,000 字符；测帧间隔与长任务，不代表 GPU、功耗或长期稳定性。保持前台及窗口尺寸不变。</p>
+    </details>
+  </main>
+  <dialog id="settings-dialog">
+    <form id="settings-form">
+      <div class="dialog-heading"><h2 data-i18n="search.static.104">API 设置</h2><button class="icon-button" id="settings-close" type="button" aria-label="关闭设置" data-i18n="search.static.105" data-i18n-aria="search.attribute.22">×</button></div>
+      <p class="dialog-intro" data-i18n="search.static.106">Key 刷新后清空；测试会将所选原文发送至指定 API。</p>
+      <label><span data-i18n="search.static.107">连接路径</span><select id="transport"><option value="browser" data-i18n="search.static.108">浏览器直连 xAI</option><option value="backend" data-i18n="search.static.109">本地后端</option></select></label>
+      <p id="transport-notice" class="fine-print" role="status"></p>
+      <label><span data-i18n="search.static.110">模型预设</span><select id="connection-preset"><option value="xai-budget" data-i18n="search.static.111">Grok Build 0.1</option><option value="xai-general" data-i18n="search.static.112">Grok 4.3 · 关闭推理</option><option value="xai-lawlens" data-i18n="search.static.113">LawLens 同款 · Grok 4.20</option><option value="custom" data-i18n="search.static.114">自定义</option></select></label>
+      <p id="model-notice" class="fine-print" role="status"></p>
+      <label><span data-i18n="search.static.115">API 协议</span><select id="protocol"><option value="responses" data-i18n="search.static.116">Responses · xAI / OpenAI 兼容</option><option value="chat" data-i18n="search.static.117">Chat Completions · 兼容接口</option></select></label>
+      <label><span data-i18n="search.static.118">Base URL</span><input id="base-url" type="url" value="https://api.x.ai/v1" required="" autocomplete="off"></label>
+      <label><span data-i18n="search.static.119">API Key</span><div class="key-input"><input id="api-key" type="password" autocomplete="off" placeholder="粘贴 xAI Console 创建的 API Key" data-i18n-placeholder="search.attribute.23"><button id="toggle-key" type="button" class="secondary" data-i18n="search.static.120">显示</button></div></label>
+      <label><span data-i18n="search.static.121">模型 ID</span><input id="model" list="model-list" value="grok-build-0.1" required="" placeholder="填写你实际有权限调用的模型" data-i18n-placeholder="search.attribute.24"><datalist id="model-list"><option value="grok-build-0.1"></option><option value="grok-4.3"></option></datalist></label>
+      <div class="two-cols"><label><span data-i18n="search.static.122">输出格式</span><select id="output-format"><option value="schema" data-i18n="search.static.123">严格 JSON Schema</option><option value="json" data-i18n="search.static.124">JSON 模式</option><option value="prompt" data-i18n="search.static.125">仅提示词约束</option></select></label><label><span data-i18n="search.static.126">输出 Token 上限</span><input id="max-tokens" type="number" min="128" max="16000" value="2500"></label></div>
+      <label id="token-parameter-wrap" class="hidden"><span data-i18n="search.static.127">兼容接口的 Token 参数</span><select id="token-parameter"><option value="max_tokens" data-i18n="search.static.128">max_tokens · 常用兼容服务</option><option value="max_completion_tokens" data-i18n="search.static.129">max_completion_tokens · 新版 OpenAI Chat</option></select></label>
+      <label><span data-i18n="search.static.130">推理强度</span><select id="reasoning-effort"><option value="auto" data-i18n="search.static.131">服务商默认 · 不发送推理参数</option><option value="none" data-i18n="search.static.132">none · 关闭推理（Grok 4.3 支持）</option><option value="low" data-i18n="search.static.133">low · 少量推理</option><option value="medium" data-i18n="search.static.134">medium · 中等推理</option><option value="high" data-i18n="search.static.135">high · 较多推理</option></select></label>
+      <p class="fine-print"><span data-i18n="search.static.136">按服务商计费，推理可能增加输出用量。</span><a href="https://console.x.ai/" target="_blank" rel="noreferrer" data-i18n="search.static.138">获取 xAI Key</a> <span data-i18n="search.static.137">·</span> <a href="https://docs.x.ai/developers/pricing" target="_blank" rel="noreferrer" data-i18n="search.static.139">价格</a></p>
+      <div id="settings-message" class="message hidden" role="status"></div>
+      <details class="network-debug"><summary data-i18n="search.static.140">连接诊断</summary><button id="network-diagnose" type="button" class="secondary" data-i18n="search.static.141">无 Key 网络检查</button><pre id="network-report" role="status" data-i18n="search.static.142">尚未检查。</pre></details>
+      <div class="dialog-actions"><button id="clear-key" type="button" class="text-button" data-i18n="search.static.143">清除 Key</button><button id="check-api" type="button" class="secondary" data-i18n="search.static.144">检查连接 / 获取模型</button><button type="submit" class="primary" data-i18n="search.static.145">应用设置</button></div>
+    </form>
+  </dialog>
+  <dialog id="prompt-dialog"><div class="dialog-heading"><h2 data-i18n="search.static.146">本次提示词</h2><button id="prompt-close" class="icon-button" aria-label="关闭提示词" data-i18n="search.static.147" data-i18n-aria="search.attribute.25">×</button></div><p class="fine-print" data-i18n="search.static.148">查看提示词不会调用 LLM。</p><pre id="prompt-text"></pre></dialog>
+
+
+</body></html>

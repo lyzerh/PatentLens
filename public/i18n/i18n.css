@@ -1,0 +1,8 @@
+.language-switcher{display:inline-flex;align-items:center;gap:2px;margin-left:auto;padding:2px;border:1px solid currentColor;background:rgba(255,255,255,.08);flex:0 0 auto;white-space:nowrap}
+.language-switcher button{border:0;background:transparent;color:inherit;padding:5px 9px;font:inherit;font-weight:700;cursor:pointer;min-width:42px}
+.language-switcher button.active{background:#006f78;color:#fff;filter:none}
+.language-switcher button[aria-pressed="true"]{outline:1px solid currentColor;outline-offset:-2px;text-decoration:underline;text-underline-offset:3px}
+header{flex-wrap:wrap}button,select,label,th,td,.distribution,.stat{min-width:0;overflow-wrap:anywhere}
+.top{flex-wrap:wrap}.top>button{white-space:nowrap;flex:0 0 auto}
+#record-detail .hint{overflow-wrap:anywhere}
+@media(max-width:650px){.language-switcher{order:9;margin-left:auto}.language-switcher button{padding:7px 10px}}

@@ -1,0 +1,32 @@
+node_modules/
+data/
+reports/
+
+# Credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*secrets*.json
+config/network.json
+
+# Local output, caches, and screenshots
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.local
+coverage/
+.cache/
+.DS_Store
+Thumbs.db
+/*.jpg
+/*.jpeg
+/*.png
+PILOT-MIGRATION.md

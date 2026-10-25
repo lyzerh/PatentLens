@@ -1,0 +1,98 @@
+{
+  "name": "PatentLens thermal pilot public source manifest",
+  "source": "European Patent Office Publication Server",
+  "patents": [
+    {
+      "publicationNumber": "EP3149425B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP3149425NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4761489A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4761489NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4231797A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4231797NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP3976726B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP3976726NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4766054A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4766054NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP1993337B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP1993337NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP1739844A2",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP1739844NWA2/document.xml"
+    },
+    {
+      "publicationNumber": "EP2567575B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP2567575NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP2802128B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP2802128NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4075113A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4075113NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP2661660B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP2661660NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP1026571A2",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP1026571NWA2/document.xml"
+    },
+    {
+      "publicationNumber": "EP4498205A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4498205NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP0767415A2",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP0767415NWA2/document.xml"
+    },
+    {
+      "publicationNumber": "EP4697879A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4697879NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP2262354A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP2262354NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP3461248A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP3461248NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4476289B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4476289NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4464131B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4464131NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4015272B1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4015272NWB1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4793571A3",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4793571NWA3/document.xml"
+    },
+    {
+      "publicationNumber": "EP4823254A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4823254NWA1/document.xml"
+    },
+    {
+      "publicationNumber": "EP4822824A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP4822824NWA1/document.xml"
+    }
+  ]
+}
