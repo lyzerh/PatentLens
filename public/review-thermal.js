@@ -6,7 +6,7 @@ const option = (value,label) => { const x=element("option",label);x.value=value;
 const fields = ["industryRelevance","technologyPrinciples","technicalSolutions","functionalObjectives"];
 const dimensionTitles = { technologyPrinciples:"review.principles",technicalSolutions:"review.solutions",functionalObjectives:"review.objectives" };
 const tierFor = value => !value ? null : config.tiers[config.relevance.indexOf(value)];
-let config,csrf,currentId=null,currentSource=null,active=null,loadedReviewer="",dirty=false;
+let config,csrf,currentId=null,currentSource=null,active=null,loadedReviewer="",dirty=false,editingEvidenceId=null,pendingLabel=null;
 const sources=new Map(),saved=new Map(),cache=new Map(),unsaved=new Set();
 const message = text => { $("message").textContent=text; };
 const tr = (kind,value) => t("review."+value) === "review."+value ? value : t("review."+value);
@@ -20,14 +20,16 @@ async function api(action,body={}) {
   if(!response.ok)throw new Error(data.error?.message??data.error?.code??"REQUEST_FAILED");
   return data;
 }
-function selectedEvidence(select){return [...select.selectedOptions].map(x=>x.value);}
 function collect(){
   if(!active)return;
   active.industryRelevance=$("industry").value||null;
   active.annotationRationale=$("rationale").value;active.uncertaintyNotes=$("uncertainty").value;
   for(const dim of config.dimensions) active[dim]=[...document.querySelectorAll('[data-dimension="'+dim+'"] .dimension-row')].map(row=>({
     code:row.querySelector(".code").value,role:row.querySelector(".role").value,claimRole:row.querySelector(".claim-role").value,
-    basis:row.querySelector(".basis").value,evidenceIds:selectedEvidence(row.querySelector(".evidence-ids"))
+    basis:row.querySelector(".basis").value,
+    evidenceIds:[...row.querySelectorAll(".evidence-link")].map(link=>link.dataset.evidenceId),
+    evidenceLinks:[...row.querySelectorAll(".evidence-link")].map(link=>({evidenceId:link.dataset.evidenceId,
+      supportRelation:link.querySelector(".link-relation").value,rationale:link.querySelector(".link-rationale").value}))
   }));
   cache.set(currentId,structuredClone(active));
 }
@@ -46,10 +48,24 @@ function renderDimensions(){
       const claim=makeSelect([["claimed",t("review.claimed")],["ancillary",t("review.ancillary")],["unknown",t("review.unknown")]],label.claimRole,"claim-role");
       const basis=makeSelect([["explicit",t("review.explicit")],["inferred",t("review.inferred")],["unknown",t("review.unknown")]],label.basis,"basis");
       controls.append(code,role,claim,basis);row.append(controls);
-      const binding=element("label",t("review.evidence"));
-      const ids=element("select");ids.className="evidence-ids";ids.multiple=true;
-      for(const e of active.evidence.filter(x=>x.supportsFields.includes(dim))){const o=option(e.evidenceId,e.evidenceId.slice(0,8)+" · "+e.locator);o.selected=label.evidenceIds.includes(e.evidenceId);ids.append(o);}
-      ids.addEventListener("change",markDirty);binding.append(ids);row.append(binding);
+      const binding=element("div",undefined,"evidence-binding");binding.append(element("strong",t("review.linkedEvidence")));
+      for(const id of label.evidenceIds){
+        const e=active.evidence.find(x=>x.evidenceId===id);if(!e)continue;
+        const savedLink=label.evidenceLinks?.find(x=>x.evidenceId===id);
+        const link=element("div",undefined,"evidence-link");link.dataset.evidenceId=id;
+        link.append(element("span",id+" · "+e.locator));
+        const relation=makeSelect(config.supportRelations.map(x=>[x,t("review."+x)]),savedLink?.supportRelation??e.supportRelation,"link-relation");
+        const rationale=element("input");rationale.className="link-rationale";rationale.maxLength=1000;
+        rationale.value=savedLink?.rationale||e.reviewerRationale||t("review.linkReasonPending");rationale.placeholder=t("review.linkRationale");rationale.addEventListener("input",markDirty);
+        const unlink=element("button",t("review.unlink"));unlink.type="button";unlink.addEventListener("click",()=>{collect();active[dim][index].evidenceIds=active[dim][index].evidenceIds.filter(x=>x!==id);
+          active[dim][index].evidenceLinks=active[dim][index].evidenceLinks.filter(x=>x.evidenceId!==id);markDirty(false);renderDimensions();});
+        link.append(relation,rationale,unlink);binding.append(link);
+      }
+      const chooser=makeSelect([["",t("review.choose")],...active.evidence.filter(x=>x.supportsFields.includes(dim)&&!label.evidenceIds.includes(x.evidenceId)).map(x=>[x.evidenceId,x.evidenceId+" · "+x.locator])],"","link-chooser");
+      const attach=element("button",t("review.linkExisting"));attach.type="button";attach.addEventListener("click",()=>{if(!chooser.value)return;collect();const e=active.evidence.find(x=>x.evidenceId===chooser.value);active[dim][index].evidenceIds.push(e.evidenceId);
+        active[dim][index].evidenceLinks.push({evidenceId:e.evidenceId,supportRelation:e.supportRelation,rationale:e.reviewerRationale||t("review.linkReasonPending")});markDirty(false);renderDimensions();});
+      const create=element("button",t("review.createForLabel"));create.type="button";create.addEventListener("click",()=>{collect();resetEvidenceEditor();pendingLabel={dim,index};$("evidence-fields").querySelector(`input[value="${dim}"]`).checked=true;$("evidence-span").focus();$("evidence-span").scrollIntoView({block:"center"});message(t("review.createHint"));});
+      binding.append(chooser,attach,create);row.append(binding);
       const remove=element("button",t("review.remove"));remove.type="button";remove.addEventListener("click",()=>{collect();active[dim].splice(index,1);markDirty(false);renderDimensions();});
       row.append(remove);box.append(row);
     }
@@ -61,7 +77,10 @@ function renderEvidence(){
   const root=$("evidence-list");root.replaceChildren();
   for(const e of active.evidence){
     const card=element("div",undefined,"evidence-item");
-    card.append(element("strong",e.evidenceId+" · "+e.locator),element("blockquote",e.sourceSpan),element("small",t("review.exact")+" ✓ · "+t("review.fields")+": "+e.supportsFields.map(x=>x==="industryRelevance"?t("review.industry"):t("review."+x)).join(", ")+" · "+t("review.semantic")+": "+tr("semantic",e.semanticSupport)));
+    const linked=config.dimensions.flatMap(dim=>active[dim].filter(label=>label.evidenceIds.includes(e.evidenceId)).map(label=>t("review.code."+label.code)));
+    card.append(element("strong",e.evidenceId+" · "+t("review."+(e.section==="claims"?"claim1":e.section))+" · "+e.locator),element("blockquote",e.sourceSpan),element("small",t("review.exact")+" ✓ · "+t("review.sourceLink")+" ✓ · "+t("review.hash")+": "+e.documentHash.slice(0,12)+"… · "+t("review.fields")+": "+e.supportsFields.map(x=>x==="industryRelevance"?t("review.industry"):t("review."+x)).join(", ")+" · "+t("review.linkedEvidence")+": "+(linked.join(", ")||"—")+" · "+t("review.semantic")+": "+tr("semantic",e.semanticSupport)));
+    const sourceLink=element("a",t("review.sourceLink"));sourceLink.href=e.sourceUrl;sourceLink.target="_blank";sourceLink.rel="noopener noreferrer";card.append(sourceLink);
+    const edit=element("button",t("review.edit"));edit.type="button";edit.addEventListener("click",()=>editEvidence(e));card.append(edit);
     const remove=element("button",t("review.remove"));remove.type="button";remove.addEventListener("click",()=>{collect();active.evidence=active.evidence.filter(x=>x.evidenceId!==e.evidenceId);for(const dim of config.dimensions)for(const label of active[dim])label.evidenceIds=label.evidenceIds.filter(id=>id!==e.evidenceId);markDirty(false);renderEvidence();renderDimensions();});
     card.append(remove);root.append(card);
   }
@@ -93,12 +112,14 @@ function renderSource(doc){
 function renderForm(){
   $("industry").value=active.industryRelevance??"";$("tier").textContent=active.industryRelevance?t("review."+tierFor(active.industryRelevance)):"—";
   $("rationale").value=active.annotationRationale;$("uncertainty").value=active.uncertaintyNotes;
+  $("annotation-method").textContent=t("review.method")+": "+(active.annotationMethod??"human_independent");
+  for(const id of ["submit-reviewed","save-disputed","save-insufficient"])$(id).disabled=active.annotationMethod==="AI-assisted human-review draft";
   renderDimensions();renderEvidence();renderTasks();
 }
 async function selectTask(id){
   if(id===currentId&&currentSource)return;
   if(currentId&&active){collect();if(dirty)unsaved.add(currentId);}
-  currentId=id;active=structuredClone(cache.get(id)??saved.get(id)??blank(id));dirty=unsaved.has(id);
+  currentId=id;active=structuredClone(cache.get(id)??saved.get(id)??blank(id));dirty=unsaved.has(id);resetEvidenceEditor();
   try{currentSource=sources.get(id)??await api("source",{publicationNumber:id});sources.set(id,currentSource);renderSource(currentSource);renderForm();message("");}
   catch(e){currentSource=null;message(t("review.error",{reason:e.message}));renderTasks();}
 }
@@ -117,7 +138,14 @@ function renderOptions(){
 }
 function availableText(){if(!currentSource)return null;const section=$("evidence-section").value;return section==="claims"?currentSource.claims.join("\n\n"):currentSource[section];}
 function matchesSection(span){const text=availableText();return !!text&&!!span&&($("evidence-section").value!=="claims"?text.includes(span):currentSource.claims.some(claim=>claim.includes(span)));}
-function checkMatch(){const text=availableText(),span=$("evidence-span").value;$("match-status").textContent=!text?t("review.noSource"):matchesSection(span)?t("review.exact")+" ✓":span?t("review.notExact"):"";}
+function matchMessage(span){if(!span)return "";if(matchesSection(span))return t("review.exact")+" ✓";
+  const other=[["title",currentSource.title],["abstract",currentSource.abstract],["claims",currentSource.claims.join("\n\n")],["description",currentSource.description]].filter(([section,text])=>section!==$("evidence-section").value&&text?.includes(span)).map(([section])=>t("review."+section));
+  return other.length?t("review.wrongSection",{section:t("review."+($("evidence-section").value==="claims"?"claim1":$("evidence-section").value)),matches:other.map(x=>x===t("review.claims")?t("review.claim1"):x).join(", ")}):t("review.notExact");}
+function checkMatch(){$("match-status").textContent=!availableText()?t("review.noSource"):matchMessage($("evidence-span").value);}
+function resetEvidenceEditor(){editingEvidenceId=null;pendingLabel=null;$("editor-title").textContent=t("review.newEvidence");$("add-evidence").textContent=t("review.addEvidence");$("evidence-span").value="";$("evidence-explain").value="";$("evidence-section").value="title";for(const box of $("evidence-fields").querySelectorAll("input"))box.checked=false;checkMatch();}
+function editEvidence(e){pendingLabel=null;editingEvidenceId=e.evidenceId;$("editor-title").textContent=t("review.editEvidence",{id:e.evidenceId});$("add-evidence").textContent=t("review.saveEvidence");
+  $("evidence-section").value=e.section;$("evidence-span").value=e.sourceSpan;$("evidence-level").value=e.evidenceLevel;$("evidence-relation").value=e.supportRelation;$("evidence-semantic").value=e.semanticSupport;$("evidence-explain").value=e.reviewerRationale;
+  for(const box of $("evidence-fields").querySelectorAll("input"))box.checked=e.supportsFields.includes(box.value);checkMatch();$("evidence-span").scrollIntoView({block:"center"});}
 function download(name,content,type){const a=element("a");const url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function save(status){
   try{
@@ -128,7 +156,7 @@ async function save(status){
   }catch(e){message(t("review.error",{reason:e.message}));}
 }
 initializeI18n();
-onLanguageChange(()=>{if(!config)return;collect();renderOptions();if(currentSource)renderSource(currentSource);if(active)renderForm();});
+onLanguageChange(()=>{if(!config)return;collect();renderOptions();if(currentSource)renderSource(currentSource);if(active)renderForm();if(editingEvidenceId)editEvidence(active.evidence.find(e=>e.evidenceId===editingEvidenceId));else $("editor-title").textContent=t("review.newEvidence");});
 $("industry").addEventListener("change",()=>{$("tier").textContent=$("industry").value?t("review."+tierFor($("industry").value)):"—";markDirty();});
 for(const id of ["rationale","uncertainty"])$(id).addEventListener("input",markDirty);
 for(const id of ["evidence-section","evidence-span"])$(id).addEventListener(id==="evidence-span"?"input":"change",checkMatch);
@@ -136,16 +164,22 @@ $("use-selection").addEventListener("click",()=>{const selection=window.getSelec
   const a=selection.anchorNode?.parentElement?.closest("pre[data-section]"),b=selection.focusNode?.parentElement?.closest("pre[data-section]");
   if(a&&a===b&&a.closest("#source-content")&&currentSource){$("evidence-section").value=a.dataset.section;$("evidence-span").value=selection.toString();checkMatch();}
 });
+$("new-evidence").addEventListener("click",()=>{resetEvidenceEditor();$("evidence-span").focus();});
 $("add-evidence").addEventListener("click",()=>{
   if(!currentSource)return;const section=$("evidence-section").value,span=$("evidence-span").value,text=availableText();
-  if(!matchesSection(span)){checkMatch();return;}
+  if(!matchesSection(span)){checkMatch();message(matchMessage(span));return;}
   const supportsFields=[...$("evidence-fields").querySelectorAll("input:checked")].map(x=>x.value);if(!supportsFields.length){message(t("review.fields"));return;}
   collect();const offset=text.indexOf(span),before=text.slice(0,offset),markers=[...before.matchAll(/\[(\d{4})\]/g)];
   const locator=section==="claims"?"Claim "+(currentSource.claims.findIndex(claim=>claim.includes(span))+1):section==="description"?(markers.length?"Description ["+markers.at(-1)[1]+"] offset "+offset:"Description offset "+offset):section;
-  active.evidence.push({evidenceId:crypto.randomUUID(),publicationNumber:currentId,documentHash:currentSource.documentHash,sourceUrl:currentSource.sourceUrl,
+  const nextId=editingEvidenceId??"EV-"+String(Math.max(0,...active.evidence.map(e=>Number(/^EV-(\d+)$/.exec(e.evidenceId)?.[1]??0)))+1).padStart(3,"0");
+  const item={evidenceId:nextId,publicationNumber:currentId,documentHash:currentSource.documentHash,sourceUrl:currentSource.sourceUrl,
     section,locator,sourceSpan:span,evidenceLevel:$("evidence-level").value,supportsFields,supportRelation:$("evidence-relation").value,
-    semanticSupport:$("evidence-semantic").value,reviewerRationale:$("evidence-explain").value,exactMatch:true,sourceMatch:true});
-  $("evidence-span").value="";$("evidence-explain").value="";checkMatch();markDirty(false);renderEvidence();renderDimensions();
+    semanticSupport:$("evidence-semantic").value,reviewerRationale:$("evidence-explain").value,exactMatch:true,sourceMatch:true};
+  if(editingEvidenceId){active.evidence=active.evidence.map(e=>e.evidenceId===editingEvidenceId?item:e);
+    for(const dim of config.dimensions)if(!supportsFields.includes(dim))for(const label of active[dim]){label.evidenceIds=label.evidenceIds.filter(id=>id!==editingEvidenceId);label.evidenceLinks=label.evidenceLinks?.filter(x=>x.evidenceId!==editingEvidenceId)??[];}}
+  else {active.evidence.push(item);if(pendingLabel&&supportsFields.includes(pendingLabel.dim)&&active[pendingLabel.dim][pendingLabel.index]){
+    const label=active[pendingLabel.dim][pendingLabel.index];label.evidenceIds.push(nextId);label.evidenceLinks.push({evidenceId:nextId,supportRelation:item.supportRelation,rationale:item.reviewerRationale||t("review.linkReasonPending")});}}
+  resetEvidenceEditor();markDirty(false);renderEvidence();renderDimensions();message(t("review.evidenceSaved",{id:nextId}));
 });
 for(const [id,status] of [["save-draft","draft"],["submit-reviewed","reviewed"],["save-disputed","disputed"],["save-insufficient","insufficient_evidence"]])$(id).addEventListener("click",()=>save(status));
 $("load").addEventListener("click",async()=>{

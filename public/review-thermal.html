@@ -6,11 +6,12 @@
 <div class="workspace">
 <aside class="panel tasks"><h2 data-i18n="review.tasks">审核任务</h2><div id="tasks"></div></aside>
 <section class="panel source"><h2 data-i18n="review.source">冻结原文</h2><div id="source-meta"></div><div id="source-content"></div></section>
-<section class="panel annotation"><h2 data-i18n="review.annotation">Taxonomy v2 标注</h2><p class="note" data-i18n="review.notGold">Human Annotation — Not Verified Gold</p>
+<section class="panel annotation"><h2 data-i18n="review.annotation">Taxonomy v2 标注</h2><p class="note" data-i18n="review.notGold">Human Annotation — Not Verified Gold</p><p id="annotation-method" class="note"></p>
 <label><span data-i18n="review.industry">行业关联性</span><select id="industry"><option value="" data-i18n="review.choose">请选择</option></select></label><p><span data-i18n="review.tier">研究组合</span>：<strong id="tier">—</strong></p>
 <div id="dimensions"></div>
-<h3 data-i18n="review.evidence">原文证据</h3><div id="evidence-list"></div>
+<h3 data-i18n="review.library">证据库</h3><p class="note" data-i18n="review.libraryHelp">先逐条添加证据，再在标签下关联；草稿保存后才会写入本机。</p><div id="evidence-list"></div>
 <div class="evidence-form">
+<h3 id="editor-title" data-i18n="review.newEvidence">新增证据</h3><button id="new-evidence" type="button" data-i18n="review.newEvidence">新增证据</button>
 <button id="use-selection" type="button" data-i18n="review.useSelection">使用所选原文</button>
 <label><span data-i18n="review.section">章节</span><select id="evidence-section"><option value="title" data-i18n="review.titleField">标题</option><option value="abstract" data-i18n="review.abstract">摘要</option><option value="claims" data-i18n="review.claim1">独立权利要求 1</option><option value="description" data-i18n="review.description">说明书</option></select></label>
 <label><span data-i18n="review.span">原文片段（逐字）</span><textarea id="evidence-span" rows="3" maxlength="2000"></textarea></label><p id="match-status" class="note"></p>

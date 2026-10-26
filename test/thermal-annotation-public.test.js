@@ -160,3 +160,28 @@ test("review page and both locale catalogs expose the same human workflow withou
   assert.match(html,/id="use-selection"/);assert.match(html,/id="save-draft"/);
   assert.doesNotMatch(js,/smoke-run|api\.x\.ai|verified_gold/);
 });
+test("synthetic evidence library saves multiple links, edited spans and independent reasons",async()=>{
+  const f=await fixture(),doc=docs[0];try{
+    const e1=evidence(doc,{evidenceId:"EV-001",sourceSpan:"a vapor chamber"});
+    const e2=evidence(doc,{evidenceId:"EV-002",section:"description",sourceSpan:"The chamber moves heat.",evidenceLevel:"embodiment",supportsFields:["technologyPrinciples","technicalSolutions"]});
+    const label={code:"Vapor Chamber",role:"primary",claimRole:"claimed",basis:"explicit",evidenceIds:["EV-001","EV-002"],
+      evidenceLinks:[{evidenceId:"EV-001",supportRelation:"supports",rationale:"Claimed structure."},{evidenceId:"EV-002",supportRelation:"context_only",rationale:"Description context, not claim limitation."}]};
+    const saved=await f.service.save(base(doc,{evidence:[e1,e2],technicalSolutions:[label]}));
+    assert.equal(saved.evidence.length,2);assert.equal(saved.technicalSolutions[0].evidenceLinks[1].supportRelation,"context_only");
+    const changed=await f.service.save({...saved,evidence:[e1,{...e2,sourceSpan:"moves heat"}]});
+    assert.equal(changed.evidence[1].sourceSpan,"moves heat");assert.equal(changed.evidence[1].exactMatch,true);
+    await assert.rejects(f.service.save({...changed,technicalSolutions:[{...label,evidenceLinks:[{...label.evidenceLinks[0],rationale:""},label.evidenceLinks[1]]}]}),/INVALID_EVIDENCE_LINK/);
+    await assert.rejects(f.service.save({...changed,technicalSolutions:[{...label,evidenceLinks:[label.evidenceLinks[0]]}]}),/INVALID_EVIDENCE_LINK/);
+  }finally{await rm(f.dir,{recursive:true,force:true});}
+});
+test("synthetic AI-assisted draft retains provenance and cannot become Reviewed or Gold",async()=>{
+  const f=await fixture(),doc=docs[4];try{
+    const item=await f.service.save(base(doc,{reviewer:"AI-assisted Codex",annotationMethod:"AI-assisted human-review draft"}));
+    assert.equal(item.reviewStatus,"draft");assert.equal(item.reviewedAt,null);assert.equal(item.annotationMethod,"AI-assisted human-review draft");
+    assert.equal((await f.service.exportAnnotations("AI-assisted Codex")).json.annotations[0].annotationMethod,item.annotationMethod);
+    await assert.rejects(f.service.save({...item,reviewStatus:"reviewed"}),/AI_DRAFT_CANNOT_BE_REVIEWED/);
+    await assert.rejects(f.service.save({...item,annotationMethod:"human_independent"}),/ANNOTATION_METHOD_CONFLICT/);
+    await assert.rejects(f.service.save({...item,reviewStatus:"verified_gold"}),/INVALID_REVIEW_STATUS/);
+    assert.equal((await f.service.load("AI-assisted Codex")).annotations[0].reviewStatus,"draft");
+  }finally{await rm(f.dir,{recursive:true,force:true});}
+});

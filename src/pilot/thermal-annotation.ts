@@ -40,9 +40,10 @@ const checkedDoc = (dataset: ThermalDataset, id: unknown) => {
   return doc;
 };
 const draftKey = (id: string, reviewer: string) => id + ":" + reviewer;
-type Label = { code: string; role: "primary"|"secondary"; claimRole: "claimed"|"ancillary"|"unknown"; basis: "explicit"|"inferred"|"unknown"; evidenceIds: string[] };
+type EvidenceLink = { evidenceId:string; supportRelation:string; rationale:string };
+type Label = { code: string; role: "primary"|"secondary"; claimRole: "claimed"|"ancillary"|"unknown"; basis: "explicit"|"inferred"|"unknown"; evidenceIds: string[]; evidenceLinks?:EvidenceLink[] };
 type Evidence = { evidenceId:string; publicationNumber:string; sourceUrl:string; documentHash:string; section:string; locator:string; sourceSpan:string; evidenceLevel:string; supportsFields:string[]; supportRelation:string; semanticSupport:string; reviewerRationale:string; exactMatch:true; sourceMatch:true };
-type Annotation = { annotationId:string; publicationNumber:string; sourceUrl:string; documentHash:string; taxonomyVersion:string; reviewer:string; reviewStatus:string; reviewedAt:string|null; adjudicationStatus:"pending"; industryRelevance:string|null; portfolioTier:string|null; primaryTechnologyCategory:null; legacyMappingStatus:"not_mapped"; technologyPrinciples:Label[]; technicalSolutions:Label[]; functionalObjectives:Label[]; evidence:Evidence[]; annotationRationale:string; uncertaintyNotes:string; createdAt:string; updatedAt:string };
+type Annotation = { annotationId:string; publicationNumber:string; sourceUrl:string; documentHash:string; taxonomyVersion:string; reviewer:string; annotationMethod?:string; reviewStatus:string; reviewedAt:string|null; adjudicationStatus:"pending"; industryRelevance:string|null; portfolioTier:string|null; primaryTechnologyCategory:null; legacyMappingStatus:"not_mapped"; technologyPrinciples:Label[]; technicalSolutions:Label[]; functionalObjectives:Label[]; evidence:Evidence[]; annotationRationale:string; uncertaintyNotes:string; createdAt:string; updatedAt:string };
 type State = { schemaVersion:"thermal-v2-annotation-pilot-1"; annotations:Record<string,Annotation>; audit:{eventId:string;annotationId:string;event:"created"|"updated"|"reviewed";at:string;reviewer:string;publicationNumber:string}[] };
 const emptyState = ():State => ({ schemaVersion:"thermal-v2-annotation-pilot-1", annotations:{}, audit:[] });
 function normalizeEvidence(doc:ThermalDocument, raw:unknown):Evidence {
@@ -82,7 +83,19 @@ function normalizeLabels(raw:unknown, dimension:typeof DIMENSIONS[number], evide
       !["claimed","ancillary","unknown"].includes(String(x.claimRole)) || !["explicit","inferred","unknown"].includes(String(x.basis)) ||
       !Array.isArray(x.evidenceIds) || x.evidenceIds.some(id => typeof id !== "string" || !evidence.some(e => e.evidenceId === id && e.supportsFields.includes(dimension)))) throw new Error("INVALID_LABEL_BINDING");
     if (x.code === "Unknown" && (x.basis !== "unknown" || x.claimRole !== "unknown")) throw new Error("UNKNOWN_LABEL_CONFLICT");
-    return { code:String(x.code), role:x.role as Label["role"], claimRole:x.claimRole as Label["claimRole"], basis:x.basis as Label["basis"], evidenceIds:[...new Set(x.evidenceIds as string[])] };
+    const ids=x.evidenceIds as string[];
+    let evidenceLinks:EvidenceLink[]|undefined;
+    if (x.evidenceLinks !== undefined) {
+      if (!Array.isArray(x.evidenceLinks) || x.evidenceLinks.length !== ids.length) throw new Error("INVALID_EVIDENCE_LINK");
+      evidenceLinks=x.evidenceLinks.map(link=>{
+        if (!isObject(link) || typeof link.evidenceId!=="string" || !ids.includes(link.evidenceId) ||
+          !SUPPORT_RELATIONS.includes(link.supportRelation as typeof SUPPORT_RELATIONS[number]) ||
+          !str(link.rationale,1000) || !String(link.rationale).trim()) throw new Error("INVALID_EVIDENCE_LINK");
+        return {evidenceId:link.evidenceId,supportRelation:String(link.supportRelation),rationale:String(link.rationale)};
+      });
+      if(new Set(evidenceLinks.map(link=>link.evidenceId)).size!==evidenceLinks.length || new Set(ids).size!==ids.length) throw new Error("INVALID_EVIDENCE_LINK");
+    }
+    return { code:String(x.code), role:x.role as Label["role"], claimRole:x.claimRole as Label["claimRole"], basis:x.basis as Label["basis"], evidenceIds:[...new Set(x.evidenceIds as string[])],...(evidenceLinks?{evidenceLinks}:{}) };
   });
   if (new Set(labels.map(x=>x.code)).size !== labels.length || labels.filter(x=>x.role==="primary").length > 1 ||
       (labels.some(x=>x.code==="Unknown") && labels.length>1)) throw new Error("DUPLICATE_OR_PRIMARY_LABEL");
@@ -94,6 +107,10 @@ function normalizeAnnotation(doc:ThermalDocument, body:Record<string,unknown>, p
   if (!str(body.reviewer,100) || !String(body.reviewer).trim()) throw new Error("REVIEWER_REQUIRED");
   if (!REVIEW_STATUSES.includes(body.reviewStatus as typeof REVIEW_STATUSES[number])) throw new Error("INVALID_REVIEW_STATUS");
   if (!str(body.annotationRationale,6000) || !str(body.uncertaintyNotes,4000)) throw new Error("INVALID_NOTES");
+  const annotationMethod=body.annotationMethod===undefined?(prior?.annotationMethod??"human_independent"):body.annotationMethod;
+  if(!["human_independent","AI-assisted human-review draft"].includes(String(annotationMethod)) ||
+    (prior && (prior.annotationMethod??"human_independent")!==annotationMethod)) throw new Error("ANNOTATION_METHOD_CONFLICT");
+  if(annotationMethod==="AI-assisted human-review draft" && body.reviewStatus!=="draft") throw new Error("AI_DRAFT_CANNOT_BE_REVIEWED");
   if (!Array.isArray(body.evidence) || body.evidence.length > 30) throw new Error("INVALID_EVIDENCE");
   const evidence = body.evidence.map(x=>normalizeEvidence(doc,x));
   if (new Set(evidence.map(x=>x.evidenceId)).size !== evidence.length) throw new Error("DUPLICATE_EVIDENCE");
@@ -111,7 +128,7 @@ function normalizeAnnotation(doc:ThermalDocument, body:Record<string,unknown>, p
   }
   const now = new Date().toISOString();
   return {annotationId:prior?.annotationId??randomUUID(),publicationNumber:doc.publicationNumber,sourceUrl:doc.sourceUrl,documentHash:doc.contentHash,taxonomyVersion:TAXONOMY_V2,
-    reviewer:String(body.reviewer).trim(),reviewStatus:String(body.reviewStatus),reviewedAt:body.reviewStatus==="reviewed"?(prior?.reviewedAt??now):null,
+    reviewer:String(body.reviewer).trim(),annotationMethod:String(annotationMethod),reviewStatus:String(body.reviewStatus),reviewedAt:body.reviewStatus==="reviewed"?(prior?.reviewedAt??now):null,
     adjudicationStatus:"pending",industryRelevance,portfolioTier,primaryTechnologyCategory:null,legacyMappingStatus:"not_mapped",...dims,evidence,
     annotationRationale:String(body.annotationRationale),uncertaintyNotes:String(body.uncertaintyNotes),createdAt:prior?.createdAt??now,updatedAt:now};
 }
@@ -152,8 +169,9 @@ export function createThermalAnnotationService(options:{datasetPath?:string;stor
     const json={title,taxonomyVersion:TAXONOMY_V2,annotations:rows};
     const markdown=["# "+title,"","Taxonomy: "+TAXONOMY_V2,"",...rows.flatMap(x=>[
       "## "+x.publicationNumber,"- Source: "+x.sourceUrl,"- Document hash: "+x.documentHash,"- Reviewer: "+x.reviewer,"- Status: "+x.reviewStatus,"- Reviewed at: "+(x.reviewedAt??"Not reviewed"),
-      "- Industry relevance: "+(x.industryRelevance??"Missing"),"- Portfolio tier: "+(x.portfolioTier??"Missing"),
-      ...DIMENSIONS.map(k=>"- "+k+": "+x[k].map(v=>v.code+" ("+v.role+", "+v.claimRole+", "+v.basis+") ["+v.evidenceIds.join(", ")+"]").join("; ")),
+      "- Annotation method: "+(x.annotationMethod??"unspecified"),"- Industry relevance: "+(x.industryRelevance??"Missing"),"- Portfolio tier: "+(x.portfolioTier??"Missing"),
+      ...DIMENSIONS.map(k=>"- "+k+": "+x[k].map(v=>v.code+" ("+v.role+", "+v.claimRole+", "+v.basis+") ["+v.evidenceIds.join(", ")+"]"+
+        (v.evidenceLinks?.length?" links: "+v.evidenceLinks.map(link=>link.evidenceId+" "+link.supportRelation+" — "+link.rationale).join("; "):"")).join("; ")),
       "- Rationale: "+x.annotationRationale,"- Uncertainty: "+x.uncertaintyNotes,"- Evidence:",
       ...x.evidence.map(e=>"- "+e.evidenceId+" ["+e.section+" / "+e.locator+"] "+e.sourceSpan+" | "+e.supportsFields.join(", ")+" | "+e.evidenceLevel+" | "+e.supportRelation+" | semantic="+e.semanticSupport+" | "+e.sourceUrl),
       ""
