@@ -48,7 +48,7 @@ function renderDimensions(){
       controls.append(code,role,claim,basis);row.append(controls);
       const binding=element("label",t("review.evidence"));
       const ids=element("select");ids.className="evidence-ids";ids.multiple=true;
-      for(const e of active.evidence.filter(x=>x.supportsFields.includes(dim))){const o=option(e.evidenceId,e.evidenceId+" · "+e.locator);o.selected=label.evidenceIds.includes(e.evidenceId);ids.append(o);}
+      for(const e of active.evidence.filter(x=>x.supportsFields.includes(dim))){const o=option(e.evidenceId,e.evidenceId.slice(0,8)+" · "+e.locator);o.selected=label.evidenceIds.includes(e.evidenceId);ids.append(o);}
       ids.addEventListener("change",markDirty);binding.append(ids);row.append(binding);
       const remove=element("button",t("review.remove"));remove.type="button";remove.addEventListener("click",()=>{collect();active[dim].splice(index,1);markDirty(false);renderDimensions();});
       row.append(remove);box.append(row);

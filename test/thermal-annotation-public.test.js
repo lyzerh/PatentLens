@@ -112,6 +112,33 @@ test("blind API sends source only, enforces same origin/CSRF and never calls a p
     assert.equal(paid,0);
   }finally{await close(app);await rm(f.dir,{recursive:true,force:true});}
 });
+test("browser-facing HTTP draft, review and export flow stays offline with synthetic data",async()=>{
+  const f=await fixture();let external=0;
+  const app=createApp({thermalDatasetPath:f.datasetPath,thermalAnnotationPath:f.storePath,
+    fetchImpl:async()=>{external++;throw new Error("external provider forbidden");}});
+  await new Promise(resolve=>app.listen(0,"127.0.0.1",resolve));
+  const root=`http://127.0.0.1:${app.address().port}`;
+  try{
+    const token=(await (await fetch(root+"/api/xai/settings/csrf")).json()).csrfToken;
+    const post=async(action,body)=>{
+      const response=await fetch(root+"/api/review-thermal/"+action,{method:"POST",headers:{"Content-Type":"application/json",
+        "X-Patent-Client":"workbench","X-Patent-CSRF":token,Origin:root},body:JSON.stringify(body)});
+      return {status:response.status,data:await response.json()};
+    };
+    const draft=await post("save",base(docs[0]));assert.equal(draft.status,200);
+    assert.equal(draft.data.reviewStatus,"draft");
+    const restored=await post("load",{reviewer:"Reviewer A"});assert.equal(restored.status,200);
+    assert.equal(restored.data.annotations[0].annotationId,draft.data.annotationId);
+    const wrongSource=await post("save",{...draft.data,evidence:[evidence(docs[0],{sourceUrl:"https://wrong.invalid"})]});
+    assert.equal(wrongSource.status,400);assert.match(wrongSource.data.error.message,/EVIDENCE_SOURCE_MISMATCH/);
+    const reviewed=await post("save",{...draft.data,reviewStatus:"reviewed"});assert.equal(reviewed.status,200);
+    assert.equal(reviewed.data.adjudicationStatus,"pending");assert.ok(reviewed.data.reviewedAt);
+    const exportData=await post("export",{reviewer:"Reviewer A"});assert.equal(exportData.status,200);
+    assert.equal(exportData.data.json.annotations[0].reviewStatus,"reviewed");
+    assert.match(exportData.data.markdown,/Not Verified Gold/);
+    assert.equal(external,0);
+  }finally{await close(app);await rm(f.dir,{recursive:true,force:true});}
+});
 test("export is explicitly non-Gold and contains annotations without bulk patent text",async()=>{
   const f=await fixture();try{
     await f.service.save(base(docs[0],{reviewStatus:"reviewed"}));
