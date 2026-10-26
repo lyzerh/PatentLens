@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lyzerh/PatentLens/schemas/patent-feature-v1.schema.json",
+  "title": "Patent Feature Candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "identity", "technicalSubject", "elements", "limitations", "relationships", "descriptionFindings", "unresolvedSpans", "extractionMode", "reviewStatus", "provenance"],
+  "properties": {
+    "schemaVersion": {"const": "patent-feature-v1"},
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["publicationNumber", "documentHash", "sourceUrl", "claimNumber", "sourceLanguage"],
+      "properties": {
+        "publicationNumber": {"type": "string"}, "documentHash": {"type": "string"}, "sourceUrl": {"type": "string"},
+        "claimNumber": {"const": "1"}, "sourceLanguage": {"type": "string"}
+      }
+    },
+    "technicalSubject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "originalText", "evidence"],
+      "properties": {
+        "type": {"enum": ["Product", "Material / Composition", "Apparatus", "System", "Method", "Other / Unknown"]},
+        "originalText": {"type": "string"}, "evidence": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "elements": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/element"}},
+    "limitations": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/limitation"}},
+    "relationships": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/relation"}},
+    "descriptionFindings": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/finding"}},
+    "unresolvedSpans": {"type": "array", "maxItems": 200, "items": {"type": "object", "additionalProperties": false, "required": ["sourceSpan", "reason"], "properties": {"sourceSpan": {"type": "string"}, "reason": {"type": "string"}}}},
+    "extractionMode": {"enum": ["rules", "mock_llm", "llm_candidate"]},
+    "reviewStatus": {"enum": ["draft", "reviewed"]},
+    "provenance": {"type": "string"}
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["section", "sourceSpan", "sourceUrl", "documentHash", "locator"],
+      "properties": {
+        "section": {"enum": ["claims", "description", "title", "abstract"]},
+        "sourceSpan": {"type": "string", "minLength": 1}, "sourceUrl": {"type": "string"},
+        "documentHash": {"type": "string"}, "locator": {"type": "string"}
+      }
+    },
+    "element": {
+      "type": "object", "additionalProperties": false,
+      "required": ["elementId", "elementName", "elementType", "originalText", "evidence", "confidenceStatus"],
+      "properties": {
+        "elementId": {"type": "string"}, "elementName": {"type": "string"}, "elementType": {"type": "string"},
+        "originalText": {"type": "string"}, "evidence": {"$ref": "#/$defs/evidence"},
+        "confidenceStatus": {"enum": ["rule_candidate", "llm_candidate", "human_reviewed", "unknown"]}
+      }
+    },
+    "limitation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["limitationId", "limitationType", "originalText", "modifiesElementId", "lowerBound", "upperBound", "unit", "lowerInclusive", "upperInclusive", "referenceBasis", "numericStatus", "evidence"],
+      "properties": {
+        "limitationId": {"type": "string"},
+        "limitationType": {"enum": ["Material Constraint", "Composition Ratio", "Numerical Range", "Structural Limitation", "Functional Limitation", "Process Step", "Other"]},
+        "originalText": {"type": "string"}, "modifiesElementId": {"type": ["string", "null"]},
+        "lowerBound": {"type": ["number", "null"]}, "upperBound": {"type": ["number", "null"]},
+        "unit": {"type": ["string", "null"]}, "lowerInclusive": {"type": ["boolean", "null"]},
+        "upperInclusive": {"type": ["boolean", "null"]}, "referenceBasis": {"type": ["string", "null"]},
+        "numericStatus": {"enum": ["parsed", "ambiguous", "not_numeric"]},
+        "evidence": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "relation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relationId", "relationType", "fromElementId", "toElementId", "originalText", "evidence", "semanticSupport"],
+      "properties": {
+        "relationId": {"type": "string"}, "relationType": {"enum": ["contains", "connected_to", "positioned_between", "thermally_coupled_to", "controls", "other"]},
+        "fromElementId": {"type": "string"}, "toElementId": {"type": "string"},
+        "originalText": {"type": "string"}, "evidence": {"$ref": "#/$defs/evidence"},
+        "semanticSupport": {"enum": ["not_assessed", "supported", "unsupported"]}
+      }
+    },
+    "finding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["findingId", "kind", "text", "evidence", "claimLimitation", "semanticSupport"],
+      "properties": {
+        "findingId": {"type": "string"}, "kind": {"enum": ["technical_problem", "proposed_solution", "described_effect", "application_context"]},
+        "text": {"type": "string"}, "evidence": {"$ref": "#/$defs/evidence"},
+        "claimLimitation": {"const": false}, "semanticSupport": {"enum": ["not_assessed", "supported", "unsupported"]}
+      }
+    }
+  }
+}
