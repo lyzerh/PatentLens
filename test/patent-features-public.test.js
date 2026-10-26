@@ -27,8 +27,14 @@ test('synthetic material: negative limit, ratio basis, units, bounds and ambiguo
   const ratio=c.limitations.find(x=>x.limitationType==='Composition Ratio');assert.deepEqual([ratio.lowerBound,ratio.upperBound,ratio.referenceBasis,ratio.unit],[25,50,'non-silicone resin','percent by weight']);
   const particle=c.limitations.find(x=>x.unit==='µm');assert.equal(particle.upperBound,25);assert.equal(particle.upperInclusive,false);
   const viscosity=c.limitations.find(x=>x.originalText.includes('melt viscosity'));assert.equal(viscosity.numericStatus,'ambiguous');assert.equal(viscosity.upperBound,null);
+  const subject=c.elements.find(x=>x.elementName==='thermal interface material');assert.ok(subject);
+  for(const unit of ['°C * cm2/W','°C','Pa*s'])assert.equal(c.limitations.find(x=>x.unit===unit).modifiesElementId,subject.elementId);
+  assert.equal(ratio.modifiesElementId,c.elements.find(x=>x.elementName==='plasticizer').elementId);
+  assert.equal(particle.modifiesElementId,c.elements.find(x=>x.elementName==='particulate filler').elementId);
   assert.ok(c.unresolvedSpans.some(x=>x.reason.includes('exponent')));assert.ok(c.relationships.some(x=>x.relationType==='contains'));
   assert.ok(c.relationships.some(x=>x.originalText.includes('wettable by')));
+  assert.ok(v.coverageItems.some(x=>x.status==='partial'&&x.unresolvedReasons.some(reason=>reason.includes('exponent'))));
+  for(const element of c.elements)assert.equal(element.evidence.publicationNumber,material.publicationNumber);
 });
 test('synthetic apparatus has distinct subject, components, relationship and unresolved content',()=>{
   const c=extractRuleFeatures(apparatus),v=validateFeatureCandidate(c,apparatus);
@@ -43,6 +49,9 @@ test('schema, fabricated evidence, numeric drift, ratio basis and relation endpo
   for(const mutate of [x=>x.schemaVersion='other',x=>x.elements[0].evidence.sourceSpan='invented',x=>x.identity.documentHash='wrong',
     x=>x.limitations.find(y=>y.limitationType==='Composition Ratio').upperBound=60,
     x=>x.limitations.find(y=>y.limitationType==='Composition Ratio').referenceBasis='total composition',
+    x=>x.limitations.find(y=>y.numericStatus==='ambiguous').unit='Nm',
+    x=>x.elements[0].evidence.locator='Description [0001]',
+    x=>x.elements[0].evidence.publicationNumber='EP0000000A1',
     x=>x.relationships[0].toElementId='missing']){
     const bad=clone(c);mutate(bad);const report=validateFeatureCandidate(bad,material);assert.equal(report.accepted,false);
   }
@@ -59,7 +68,11 @@ test('mock provider runs offline and paid adapter refuses without any key',async
 });
 test('separate store preserves immutable machine output and append-only human revisions',async()=>{
   const f=await fixture();try{
+    const taxonomyPath=join(f.dir,'taxonomy-v2-state.json'),taxonomySentinel='{"syntheticMock":true,"reviewStatus":"draft"}';
+    await writeFile(taxonomyPath,taxonomySentinel);
     const machine=await f.service.create(material.publicationNumber);assert.equal(machine.revisions.length,0);
+    assert.equal(machine.machineStatus,'machine_generated_unreviewed');assert.equal(machine.machineOutput.extractionMode,'rules');
+    assert.equal(await readFile(taxonomyPath,'utf8'),taxonomySentinel);
     await assert.rejects(f.service.create(material.publicationNumber),/ALREADY_EXISTS/);
     const edited=clone(machine.machineOutput);edited.elements[0].elementName='resin (human candidate)';
     const first=await f.service.saveReview(material.publicationNumber,machine.recordId,'Synthetic Reviewer','draft',edited);

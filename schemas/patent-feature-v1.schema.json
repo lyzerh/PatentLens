@@ -35,8 +35,9 @@
   "$defs": {
     "evidence": {
       "type": "object", "additionalProperties": false,
-      "required": ["section", "sourceSpan", "sourceUrl", "documentHash", "locator"],
+      "required": ["publicationNumber", "section", "sourceSpan", "sourceUrl", "documentHash", "locator"],
       "properties": {
+        "publicationNumber": {"type": "string"},
         "section": {"enum": ["claims", "description", "title", "abstract"]},
         "sourceSpan": {"type": "string", "minLength": 1}, "sourceUrl": {"type": "string"},
         "documentHash": {"type": "string"}, "locator": {"type": "string"}

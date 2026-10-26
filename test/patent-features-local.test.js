@@ -15,6 +15,9 @@ test('frozen EP4476289B1 Claim 1 is expressible without writing any private reco
   assert.ok(c.limitations.some(x=>x.unit==='°C * cm2/W'&&x.upperBound===0.5));
   assert.ok(c.limitations.some(x=>x.unit==='°C'&&x.lowerBound===40&&x.upperBound===80));
   assert.ok(c.limitations.some(x=>x.unit==='Pa*s'&&x.numericStatus==='ambiguous'&&x.upperBound===null));
+  const subject=c.elements.find(x=>x.elementName==='thermal interface material');assert.ok(subject);
+  for(const unit of ['°C * cm2/W','°C','Pa*s'])assert.equal(c.limitations.find(x=>x.unit===unit).modifiesElementId,subject.elementId);
+  assert.ok(v.coverageItems.some(x=>x.status==='partial'&&x.unresolvedReasons.some(reason=>reason.includes('exponent'))));
   assert.equal(c.descriptionFindings.every(x=>x.claimLimitation===false&&x.evidence.section==='description'),true);
   assert.equal(v.schemaValid,true);assert.equal(v.accepted,true);assert.ok(v.coverage.unresolved>0);
 });
