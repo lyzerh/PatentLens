@@ -5,9 +5,10 @@ import enStatic from './en-static.js';
 import pilotZh from './pilot.js';
 import v3Zh from './v3.js';
 import searchZh from './search.js';
+import review from './review.js';
 
 const storageKey = 'patentlens.locale';
-const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en}};
+const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en}};
 let language = 'zh-CN';
 try { if (localStorage.getItem(storageKey) === 'en') language = 'en'; } catch {}
 const listeners = new Set();

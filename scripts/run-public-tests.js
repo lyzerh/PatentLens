@@ -10,6 +10,7 @@ const files = [
   "test/pipeline.test.js",
   "test/retrieval-network.test.js",
   "test/thermal-public-safety.test.js",
+  "test/thermal-annotation-public.test.js",
   "test/thermal-smoke-ui.test.js",
   "test/ui-lab.test.js",
   "test/workbench.test.js"

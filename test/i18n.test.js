@@ -54,6 +54,7 @@ test('a fresh page module restores the saved locale without contacting any API',
 test('all four pages bind static text and attributes to translated keys',async()=>{
   const zh=(await import('../public/i18n/zh-static.js')).default;
   const english=(await import('../public/i18n/en-static.js')).default;
+  const review=(await import('../public/i18n/review.js')).default;
   for(const [page,prefix] of [['pilot-thermal','thermal'],['pilot-v3','v3'],['pilot','pilot'],['index','search']]){
     const html=await readFile(new URL(`../public/${page}.html`,import.meta.url),'utf8');
     const $=load(html);
@@ -61,9 +62,9 @@ test('all four pages bind static text and attributes to translated keys',async()
     for(const attr of ['data-i18n','data-i18n-placeholder','data-i18n-aria','data-i18n-title']){
       $(`[${attr}]`).each((_,element)=>{
         const key=$(element).attr(attr);
-        assert.ok(key.startsWith(`${prefix}.`),`${page} key ${key}`);
-        assert.ok(Object.hasOwn(zh,key),`Chinese ${key}`);
-        assert.ok(Object.hasOwn(english,key),`English ${key}`);
+        assert.ok(key.startsWith(`${prefix}.`) || page==='pilot-thermal' && key==='review.nav',`${page} key ${key}`);
+        assert.ok(Object.hasOwn(zh,key) || Object.hasOwn(review.zh,key),`Chinese ${key}`);
+        assert.ok(Object.hasOwn(english,key) || Object.hasOwn(review.en,key),`English ${key}`);
       });
     }
     assert.match(html,/\/i18n\/i18n\.css/);
@@ -71,4 +72,16 @@ test('all four pages bind static text and attributes to translated keys',async()
       assert.deepEqual($('#review-form select[name="industryScope"] option').map((_,option)=>$(option).attr('value')).get(),['in_scope','boundary_case','out_of_scope','uncertain']);
     }
   }
+});
+test('blind review page binds Chinese and English strings through the shared switcher',async()=>{
+  const review=(await import('../public/i18n/review.js')).default;
+  const html=await readFile(new URL('../public/review-thermal.html',import.meta.url),'utf8');
+  const $=load(html);
+  assert.ok($('[data-i18n]').length>=25);
+  $('[data-i18n]').each((_,element)=>{
+    const key=$(element).attr('data-i18n');
+    assert.ok(Object.hasOwn(review.zh,key),`Chinese ${key}`);
+    assert.ok(Object.hasOwn(review.en,key),`English ${key}`);
+  });
+  assert.match(html,/\/i18n\/i18n\.css/);
 });

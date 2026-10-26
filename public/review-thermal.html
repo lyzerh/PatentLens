@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PatentLens · Human Annotation</title><link rel="stylesheet" href="/review-thermal.css"><link rel="stylesheet" href="/i18n/i18n.css"><script type="module" src="/review-thermal.js"></script></head>
+<body><header><strong>PATENTLENS / REVIEW</strong><a href="/pilot-thermal" data-i18n="review.back">返回专题页面</a></header>
+<main><div class="hero"><div><p class="eyebrow">V0.7.0 / HUMAN REVIEW</p><h1 data-i18n="review.title">热管理专利人工标注</h1><p data-i18n="review.subtitle">独立盲审 · Taxonomy v2 草案 · 人工标注，非 Verified Gold</p></div></div>
+<section class="toolbar"><label><span data-i18n="review.reviewer">审核者标识</span><input id="reviewer" maxlength="100" autocomplete="off"></label><button id="load" type="button" data-i18n="review.load">加载我的草稿</button><strong id="progress"></strong><button id="export-json" type="button" data-i18n="review.exportJson">导出 JSON</button><button id="export-md" type="button" data-i18n="review.exportMd">导出 Markdown</button></section>
+<p id="message" role="status" aria-live="polite"></p>
+<div class="workspace">
+<aside class="panel tasks"><h2 data-i18n="review.tasks">审核任务</h2><div id="tasks"></div></aside>
+<section class="panel source"><h2 data-i18n="review.source">冻结原文</h2><div id="source-meta"></div><div id="source-content"></div></section>
+<section class="panel annotation"><h2 data-i18n="review.annotation">Taxonomy v2 标注</h2><p class="note" data-i18n="review.notGold">Human Annotation — Not Verified Gold</p>
+<label><span data-i18n="review.industry">行业关联性</span><select id="industry"><option value="" data-i18n="review.choose">请选择</option></select></label><p><span data-i18n="review.tier">研究组合</span>：<strong id="tier">—</strong></p>
+<div id="dimensions"></div>
+<h3 data-i18n="review.evidence">原文证据</h3><div id="evidence-list"></div>
+<div class="evidence-form">
+<button id="use-selection" type="button" data-i18n="review.useSelection">使用所选原文</button>
+<label><span data-i18n="review.section">章节</span><select id="evidence-section"><option value="title" data-i18n="review.titleField">标题</option><option value="abstract" data-i18n="review.abstract">摘要</option><option value="claims" data-i18n="review.claim1">独立权利要求 1</option><option value="description" data-i18n="review.description">说明书</option></select></label>
+<label><span data-i18n="review.span">原文片段（逐字）</span><textarea id="evidence-span" rows="3" maxlength="2000"></textarea></label><p id="match-status" class="note"></p>
+<label><span data-i18n="review.level">证据等级</span><select id="evidence-level"></select></label>
+<fieldset><legend data-i18n="review.fields">支持字段</legend><div id="evidence-fields"></div></fieldset>
+<label><span data-i18n="review.relation">支持关系</span><select id="evidence-relation"></select></label>
+<label><span data-i18n="review.semantic">语义支持</span><select id="evidence-semantic"></select></label>
+<label><span data-i18n="review.explain">证据解释</span><input id="evidence-explain" maxlength="1000"></label>
+<button id="add-evidence" type="button" data-i18n="review.addEvidence">定位并添加证据</button></div>
+<label><span data-i18n="review.rationale">Annotation Rationale · 判断理由</span><textarea id="rationale" rows="5" maxlength="6000"></textarea></label>
+<label><span data-i18n="review.uncertainty">Uncertainty Notes · 未解决问题</span><textarea id="uncertainty" rows="3" maxlength="4000"></textarea></label>
+<div class="actions"><button id="save-draft" type="button" data-i18n="review.save">保存 Draft</button><button id="submit-reviewed" type="button" class="primary" data-i18n="review.submit">提交 Reviewed</button><button id="save-disputed" type="button" data-i18n="review.dispute">保存 Disputed</button><button id="save-insufficient" type="button" data-i18n="review.insufficient">保存 Insufficient Evidence</button></div>
+</section></div></main></body></html>

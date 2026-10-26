@@ -11,6 +11,7 @@ PatentLens 是本机运行的专利情报研究原型，用于检索公开专利
 ### 功能
 
 - 四个入口：检索工作台（/）、组合分析（/pilot）、价值验证（/pilot-v3）、智能终端热管理实验（/pilot-thermal）。
+- 人工盲审试点：`/review-thermal`。使用本机冻结原文和私有草稿；操作说明见 [人工标注试点](docs/v0.7.0/human-annotation-pilot.md)。本阶段不能创建 Verified Gold。
 - 简体中文和英语即时切换；浏览器只保存语言偏好，不保存 API Key。
 - EPO 来源追踪、组合统计、人工复核、规则基线、Mock 模式及 JSON/Markdown 导出。
 - 单篇工程试运行将 C 的结构化响应交给离线 D Validator；原文精确匹配、来源链接匹配与语义支持分别记录。
@@ -56,6 +57,7 @@ PatentLens is a local AI patent intelligence research prototype for retrieving p
 ### Features
 
 - Four pages: search workbench (/), portfolio (/pilot), value validation (/pilot-v3), and smart-device thermal pilot (/pilot-thermal).
+- Blind human annotation pilot: `/review-thermal`. It uses local frozen sources and private drafts; see the [annotation guide](docs/v0.7.0/human-annotation-pilot.md). This phase cannot create Verified Gold.
 - Instant Simplified Chinese and English switching. Only language preference is stored in the browser; API keys are not.
 - Source provenance, portfolio statistics, human review, rule baselines, Mock mode, and JSON/Markdown export.
 - One structured C response feeds deterministic offline D. Exact quotation matching, source URL matching, and semantic support remain separate outcomes.
