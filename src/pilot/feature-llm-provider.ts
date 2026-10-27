@@ -1,70 +1,54 @@
 import {createHash} from 'node:crypto';
 import featureSchema from '../../schemas/patent-feature-v1.schema.json' with {type:'json'};
+import {buildRequest,readModelText} from '../llm.js';
+import {costFromUsage,estimateCost,PRICES} from './benchmark.ts';
 import type {ThermalDocument} from './thermal.ts';
 
-export const FEATURE_PROMPT_VERSION='feature-claim1-v1';
-export const DEFAULT_FEATURE_MODEL='gemini-2.5-flash-lite';
-export const FEATURE_PRICE={model:DEFAULT_FEATURE_MODEL,inputUsdPerMillion:0.10,outputUsdPerMillion:0.40,source:'https://ai.google.dev/gemini-api/docs/pricing',tier:'paid-standard'} as const;
-export type ProviderUsage={inputTokens:number|null;outputTokens:number|null;thoughtTokens:number|null;totalTokens:number|null};
-export type ProviderResult={rawText:string;usage:ProviderUsage;resolvedModel:string;httpStatus:number;attempts:number;finishReason?:string};
-export type FeatureProviderAdapter={id:'gemini';model:string;generate(input:{prompt:string;maxOutputTokens:number;timeoutMs:number},key:string):Promise<ProviderResult>};
+export const FEATURE_PROMPT_VERSION='feature-claim1-xai-v1';
+export const DEFAULT_FEATURE_MODEL='grok-4.3';
+export const FEATURE_PRICE={model:DEFAULT_FEATURE_MODEL,version:PRICES.version,source:PRICES.source,short:PRICES.models[DEFAULT_FEATURE_MODEL]?.short,long:PRICES.models[DEFAULT_FEATURE_MODEL]?.long,longContextThreshold:PRICES.longContextThreshold};
+export type ProviderUsage={inputTokens:number|null;outputTokens:number|null;cachedTokens:number|null;reasoningTokens:number|null};
+export type ProviderResult={rawText:string;usage:ProviderUsage;resolvedModel:string;httpStatus:number;attempts:1;costUsd:number|null;costKind:'actual_cost'|'estimated_cost'|'unknown';responseStatus:string|null;finishReason?:string};
+export type FeatureProviderAdapter={id:'xai';model:string;generate(input:{prompt:string;maxOutputTokens:number;timeoutMs:number},key:string):Promise<ProviderResult>};
 export const sha=(text:string)=>createHash('sha256').update(text).digest('hex');
 
-// Gemini accepts a JSON Schema subset. Expand local references and replace const with enum.
-function providerSchema(value:unknown,definitions=(featureSchema as { $defs:Record<string,unknown> }).$defs):unknown{
-  if(Array.isArray(value))return value.map(x=>providerSchema(x,definitions));
-  if(!value||typeof value!=='object')return value;
-  const input=value as Record<string,unknown>;
-  if(typeof input.$ref==='string')return providerSchema(definitions[input.$ref.split('/').at(-1)!],definitions);
-  const output:Record<string,unknown>={};
-  for(const [key,item] of Object.entries(input)){
-    if(['$schema','$id','$defs','title','minLength'].includes(key))continue;
-    if(key==='const'){output.enum=[item];continue;}
-    output[key]=providerSchema(item,definitions);
-  }
-  return output;
-}
-export const featureResponseSchema=providerSchema(featureSchema);
-
+// The historical xAI Responses transport supports JSON Schema, including local $defs.
+// Remove only document metadata; the unchanged local Schema v1 validator remains authoritative.
+export const featureResponseSchema=Object.fromEntries(Object.entries(featureSchema).filter(([key])=>!['$schema','$id','title'].includes(key))) as {type:string;properties:any;required:string[];additionalProperties:boolean};
 export function buildFeaturePrompt(doc:ThermalDocument){
   const claim=doc.independentClaims[0];if(!claim?.trim())throw new Error('CLAIM_1_UNAVAILABLE');
+  const description=doc.description??'';
+  const context=description.length>3500?description.slice(0,3500):description;
   const identity={publicationNumber:doc.publicationNumber,documentHash:doc.contentHash,sourceUrl:doc.sourceUrl,claimNumber:'1',sourceLanguage:'en'};
   const prompt=[
-    `Patent Feature Schema v1. Prompt ${FEATURE_PROMPT_VERSION}. Return one JSON object only, matching the provided JSON schema.`,
-    'Extract only what Independent Claim 1 explicitly supports. Technical subject, elements, limitations, and element relationships are different fields. Do not infer an element, relationship, commercial application, equivalence or infringement.',
-    'Every originalText and evidence.sourceSpan must be the same continuous, byte-for-byte substring of Claim 1. Every claim evidence uses section="claims", locator="Claim 1", and the exact publicationNumber, documentHash and sourceUrl below. Never omit device numbers, rewrite words or join distant spans.',
-    'Use descriptionFindings: [] because no description is supplied. Set semanticSupport="not_assessed" on every relationship. Set extractionMode="llm_candidate", reviewStatus="draft", provenance="llm_candidate_unreviewed"; element confidenceStatus="llm_candidate".',
-    'For an ambiguous number such as 105 Pa*s with potentially lost exponent formatting, preserve originalText and unit, use numericStatus="ambiguous", null numeric bounds, and list the exact span in unresolvedSpans. Never silently convert it to 10^5.',
-    'For percentages, retain the exact referenceBasis. Preserve strict less-than with upperInclusive=false. An unsupported relationship belongs in unresolvedSpans rather than relationships. Report unparsed Claim 1 fragments in unresolvedSpans.',
+    `Patent Feature Schema v1. Prompt ${FEATURE_PROMPT_VERSION}. Return exactly one JSON object matching the provided schema.`,
+    'Primary scope is Independent Claim 1. Separate technical subject, elements, limitations and relationships. Do not infer unsupported elements, applications, relationships, equivalence, infringement, FTO, validity or patent value.',
+    'For claim evidence, originalText and sourceSpan must be one continuous, byte-for-byte Claim 1 substring. Use section="claims", locator="Claim 1", and copy the frozen publicationNumber, documentHash and full sourceUrl exactly. Do not delete reference numbers, rewrite words or merge distant spans.',
+    'Description below is context only. Never promote an example or effect in the description into a necessary Claim 1 limitation. If citing a description finding, quote one exact continuous span, use section="description", claimLimitation=false, and a locator such as Description [0003] offset N computed from the complete frozen description. If uncertain, leave descriptionFindings empty.',
+    'Preserve negative limitations, every material percentage and its referenceBasis, operators, units, strict bounds and open/closed intervals. Do not repair corrupted superscripts or scientific notation. For "melt viscosity of less than 105 Pa*s", do not turn 105 into 10^5 without source verification: preserve text/unit, set ambiguous bounds to null and list that exact span in unresolvedSpans.',
+    'Relationships must point to existing element IDs and quote a directly supporting Claim 1 span. Put unsupported or unparsed text in unresolvedSpans. Set semanticSupport="not_assessed", extractionMode="llm_candidate", reviewStatus="draft", provenance="xai_grok_feature_candidate_unreviewed", and element confidenceStatus="llm_candidate".',
     `Frozen identity: ${JSON.stringify(identity)}`,
-    `Title (context only, not evidence): ${doc.title}`,
-    `Independent Claim 1, exact text follows:\n${claim}`
+    `Title (context only): ${doc.title}`,
+    `Independent Claim 1 (exact):\n${claim}`,
+    `Description context (exact prefix; truncated=${description.length>context.length}; evidence only from shown text):\n${context}`
   ].join('\n\n');
-  return {prompt,promptHash:sha(prompt),identity,inputHash:sha(JSON.stringify({identity,claim,title:doc.title}))};
+  return {prompt,promptHash:sha(prompt),identity,inputHash:sha(JSON.stringify({identity,claim,title:doc.title,descriptionContext:context})),descriptionCharsSent:context.length,descriptionTruncated:description.length>context.length};
 }
-const integer=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0?value:null;
-export function createGeminiFeatureAdapter(options:{model?:string;fetchImpl?:typeof fetch;maxRetries?:number}={}):FeatureProviderAdapter{
-  const model=options.model??DEFAULT_FEATURE_MODEL;
-  if(!/^gemini-[a-z0-9.-]{3,60}$/.test(model))throw new Error('INVALID_FEATURE_MODEL');
-  const fetchImpl=options.fetchImpl??fetch,maxRetries=options.maxRetries??1;
-  return {id:'gemini',model,async generate(input,key){
-    if(!key)throw new Error('GEMINI_API_KEY_NOT_CONFIGURED');
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-    const body={contents:[{role:'user',parts:[{text:input.prompt}]}],generationConfig:{responseMimeType:'application/json',responseJsonSchema:featureResponseSchema,maxOutputTokens:input.maxOutputTokens,temperature:0}};
-    for(let attempt=0;attempt<=maxRetries;attempt++){
-      let response:Response;
-      try{response=await fetchImpl(url,{method:'POST',redirect:'error',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(input.timeoutMs)});}
-      catch{throw new Error('PROVIDER_TRANSPORT_UNKNOWN: request may have reached Gemini; automatic retry forbidden');}
-      if(response.status===429&&attempt<maxRetries){await new Promise(resolve=>setTimeout(resolve,Math.min(1000*2**attempt,4000)));continue;}
-      if(!response.ok){const code=response.status===401||response.status===403?'PROVIDER_AUTH':response.status===429?'PROVIDER_RATE_LIMIT':response.status>=500?'PROVIDER_UNAVAILABLE':'PROVIDER_REJECTED';throw new Error(`${code}: HTTP ${response.status}`);}
-      let data:Record<string,unknown>;
-      try{data=await response.json() as Record<string,unknown>;}catch{throw new Error('PROVIDER_INVALID_JSON_ENVELOPE');}
-      const candidate=(data.candidates as Array<{content?:{parts?:Array<{text?:string}>};finishReason?:string}>|undefined)?.[0];
-      const rawText=candidate?.content?.parts?.map(x=>x.text??'').join('')??'';
-      if(!rawText)throw new Error('PROVIDER_INCOMPLETE_RESPONSE');
-      const usage=data.usageMetadata as Record<string,unknown>|undefined;
-      return {rawText,usage:{inputTokens:integer(usage?.promptTokenCount),outputTokens:integer(usage?.candidatesTokenCount),thoughtTokens:integer(usage?.thoughtsTokenCount),totalTokens:integer(usage?.totalTokenCount)},resolvedModel:typeof data.modelVersion==='string'?data.modelVersion:model,httpStatus:response.status,attempts:attempt+1,finishReason:candidate?.finishReason};
-    }
-    throw new Error('PROVIDER_RATE_LIMIT');
+export function createXaiFeatureAdapter(options:{fetchImpl?:typeof fetch}={}):FeatureProviderAdapter{
+  const fetchImpl=options.fetchImpl??fetch,model=DEFAULT_FEATURE_MODEL;
+  return {id:'xai',model,async generate(input,key){
+    if(!key)throw new Error('XAI_API_KEY_NOT_CONFIGURED');
+    const request=buildRequest({protocol:'responses',baseUrl:'https://api.x.ai/v1',model,maxOutputTokens:input.maxOutputTokens,format:'schema',reasoningEffort:'none'},input.prompt,{schema:featureResponseSchema,name:'patent_feature_v1'});
+    let response:Response;
+    try{response=await fetchImpl(request.url,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(request.body),signal:AbortSignal.timeout(input.timeoutMs)});}
+    catch{throw new Error('PROVIDER_TRANSPORT_UNKNOWN: xAI request may have been delivered; retry forbidden');}
+    if(!response.ok){await response.body?.cancel();const code=response.status===401||response.status===403?'PROVIDER_AUTH':response.status===429?'PROVIDER_RATE_LIMIT':response.status>=500?'PROVIDER_UNAVAILABLE':'PROVIDER_REJECTED';throw new Error(`${code}: HTTP ${response.status}`);}
+    let raw:Record<string,unknown>;
+    try{raw=await response.json() as Record<string,unknown>;}catch{throw new Error('PROVIDER_RESPONSE_UNKNOWN: malformed xAI envelope; retry forbidden');}
+    let rawText:string;
+    try{rawText=readModelText(raw,'responses');}catch{throw new Error('PROVIDER_RESPONSE_UNKNOWN: incomplete or refused xAI response; retry forbidden');}
+    const c=costFromUsage(raw.usage as Parameters<typeof costFromUsage>[0],model);
+    return {rawText,usage:{inputTokens:c.input,outputTokens:c.output,cachedTokens:c.cached,reasoningTokens:c.reasoning},resolvedModel:typeof raw.model==='string'?raw.model:model,httpStatus:response.status,attempts:1,costUsd:c.usd,costKind:c.kind==='actual'?'actual_cost':c.kind==='estimated'?'estimated_cost':'unknown',responseStatus:typeof raw.status==='string'?raw.status:null};
   }};
 }
+export {estimateCost};

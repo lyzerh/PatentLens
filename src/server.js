@@ -49,7 +49,7 @@ async function readBody(req, maxBytes = 1500000) {
   } catch { throw new AppError("INVALID_JSON", "请求格式不是 JSON 对象。"); }
 }
 
-export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, getGeminiKey, getXaiKey } = {}) {
+export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, getXaiKey } = {}) {
   const keySession = createXaiKeySession({ fetchImpl, getEnvironmentKey: getXaiKey });
   const pilot = createPilotService({ path: pilotPath, fetchImpl, retrievalFetchImpl, getKey: keySession.getKey });
   const thermal = createThermalService({ datasetPath: thermalDatasetPath, reviewPath: thermalReviewPath, smokePath: thermalSmokePath, legacyPath: pilotPath, fetchImpl, getKey: keySession.getKey });
@@ -58,7 +58,7 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
   const comparisons = createPatentComparisonService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:comparisonStorePath});
   const repository = createPatentRepositoryService({datasetPath:thermalDatasetPath,featureStorePath,storePath:repositoryStorePath});
   const collections = createPatentCollectionService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:collectionStorePath});
-  const featureLlm = createFeatureLlmService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:featureLlmStorePath,provider:featureLlmProvider,fetchImpl,getKey:getGeminiKey});
+  const featureLlm = createFeatureLlmService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:featureLlmStorePath,provider:featureLlmProvider,fetchImpl,getKey:keySession.getKey});
   return http.createServer(async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
