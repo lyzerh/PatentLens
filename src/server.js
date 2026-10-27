@@ -14,6 +14,7 @@ import { createPatentFeatureService } from "./pilot/patent-features.ts";
 import { createPatentComparisonService } from "./pilot/patent-comparison.ts";
 import { createPatentRepositoryService } from "./pilot/patent-repository.ts";
 import { createPatentCollectionService } from "./pilot/patent-collections.ts";
+import { createFeatureLlmService } from "./pilot/feature-llm-service.ts";
 import { createXaiKeySession } from "./xai-key-session.js";
 
 export const APP_VERSION = "0.6.0";
@@ -48,7 +49,7 @@ async function readBody(req, maxBytes = 1500000) {
   } catch { throw new AppError("INVALID_JSON", "请求格式不是 JSON 对象。"); }
 }
 
-export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, getXaiKey } = {}) {
+export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, getGeminiKey, getXaiKey } = {}) {
   const keySession = createXaiKeySession({ fetchImpl, getEnvironmentKey: getXaiKey });
   const pilot = createPilotService({ path: pilotPath, fetchImpl, retrievalFetchImpl, getKey: keySession.getKey });
   const thermal = createThermalService({ datasetPath: thermalDatasetPath, reviewPath: thermalReviewPath, smokePath: thermalSmokePath, legacyPath: pilotPath, fetchImpl, getKey: keySession.getKey });
@@ -57,6 +58,7 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
   const comparisons = createPatentComparisonService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:comparisonStorePath});
   const repository = createPatentRepositoryService({datasetPath:thermalDatasetPath,featureStorePath,storePath:repositoryStorePath});
   const collections = createPatentCollectionService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:collectionStorePath});
+  const featureLlm = createFeatureLlmService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:featureLlmStorePath,provider:featureLlmProvider,fetchImpl,getKey:getGeminiKey});
   return http.createServer(async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
@@ -150,6 +152,11 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
           if(pathname==="/api/patent-repository/run-batch")return send(res,200,await repository.runBatch(value.publicationNumbers));
           if(pathname==="/api/patent-repository/search")return send(res,200,await repository.search(value.query??{}));
           if(pathname==="/api/patent-repository/record")return send(res,200,await repository.get(value.extractionRecordId));
+          if(pathname==="/api/patent-repository/llm-state")return send(res,200,await featureLlm.publicState());
+          if(pathname==="/api/patent-repository/llm-preflight")return send(res,200,await featureLlm.preflight(value.publicationNumbers));
+          if(pathname==="/api/patent-repository/llm-authorize")return send(res,200,await featureLlm.authorize(value));
+          if(pathname==="/api/patent-repository/llm-execute")return send(res,200,await featureLlm.execute(value));
+          if(pathname==="/api/patent-repository/llm-inspect")return send(res,200,await featureLlm.inspect(value.attemptId));
           if(pathname==="/api/patent-collections/list")return send(res,200,await collections.list());
           if(pathname==="/api/patent-collections/create")return send(res,200,await collections.create(value.title,value.description,value.optionalNotes));
           if(pathname==="/api/patent-collections/load")return send(res,200,await collections.get(value.collectionId));

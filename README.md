@@ -14,6 +14,7 @@ PatentLens 是本机运行的专利情报研究原型，用于检索公开专利
 - 人工盲审试点：`/review-thermal`。使用本机冻结原文和私有草稿；操作说明见 [人工标注试点](docs/v0.7.0/human-annotation-pilot.md)。本阶段不能创建 Verified Gold。
 - 技术特征解析试点：`/patent-features`。免费规则与离线 Mock 拆解独立权利要求 1，显示原文定位、数值歧义和覆盖缺口；人工修改另存为修订。参见 [Feature Schema v1](docs/v0.8.0/patent-feature-v1.md)。本阶段禁用真实 LLM 特征解析。
 - 技术特征库：`/patent-repository`。对本地文献进行免费批量规则提取、结构化字段及数值筛选、研究集合整理，并将选中记录送入 `/patent-compare`。参见 [Repository v1 操作与限制](docs/v0.8.0/patent-repository-v1.md)。仅入库可解析记录；关键词命中不是语义等同。
+- 可选 Gemini 技术特征提取：仍在 `/patent-repository`，默认关闭且不影响免费规则。服务端配置 `GEMINI_API_KEY` 后，须逐次完成免费预检、费用确认和一次性授权；原始输出及费用估算留在本机私有审计记录。设置与安全边界见 [Phase 4 使用说明](docs/v0.8.0/patent-repository-v1.md)。本版本开发中未执行真实 Gemini 请求。
 - 简体中文和英语即时切换；浏览器只保存语言偏好，不保存 API Key。
 - EPO 来源追踪、组合统计、人工复核、规则基线、Mock 模式及 JSON/Markdown 导出。
 - 单篇工程试运行将 C 的结构化响应交给离线 D Validator；原文精确匹配、来源链接匹配与语义支持分别记录。
@@ -62,6 +63,7 @@ PatentLens is a local AI patent intelligence research prototype for retrieving p
 - Blind human annotation pilot: `/review-thermal`. It uses local frozen sources and private drafts; see the [annotation guide](docs/v0.7.0/human-annotation-pilot.md). This phase cannot create Verified Gold.
 - Technical feature pilot: `/patent-features`. Free rules and offline Mock decompose Independent Claim 1, expose source spans, numeric ambiguity and coverage gaps, and append human edits as revisions. See [Feature Schema v1](docs/v0.8.0/patent-feature-v1.md). Live LLM feature extraction is disabled in this phase.
 - Feature repository: `/patent-repository` batches free rules extraction over local documents, searches structured fields and numeric constraints, manages research collections, and sends pinned records to `/patent-compare`. See the [Repository v1 guide](docs/v0.8.0/patent-repository-v1.md). Indexed or keyword-matched records do not establish semantic equivalence.
+- Optional Gemini feature extraction uses the same repository page. Configure server-side `GEMINI_API_KEY`; free preflight, explicit cost confirmation, a one-time authorization and a separate Execute action are required. Raw output and estimated costs stay in ignored local audit storage. See the [Phase 4 guide](docs/v0.8.0/patent-repository-v1.md). No live Gemini request was made during implementation.
 - Instant Simplified Chinese and English switching. Only language preference is stored in the browser; API keys are not.
 - Source provenance, portfolio statistics, human review, rule baselines, Mock mode, and JSON/Markdown export.
 - One structured C response feeds deterministic offline D. Exact quotation matching, source URL matching, and semantic support remain separate outcomes.
