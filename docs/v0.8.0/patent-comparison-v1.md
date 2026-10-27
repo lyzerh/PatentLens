@@ -1,0 +1,13 @@
+# Patent Comparison v1 / 双专利技术特征比较
+
+`/patent-compare` reads two Patent Feature Schema v1 candidates. Each side is pinned to its publication number, frozen document hash, feature record ID and latest revision ID. If no feature record exists, the service generates a transient rules candidate; saving a comparison does **not** save or edit either feature record. Comparisons live separately under the ignored `data/patent-comparisons-v1/` directory.
+
+The versioned schema is [`schemas/patent-comparison-v1.schema.json`](../../schemas/patent-comparison-v1.schema.json). It records element alignments, paired limitations, unmatched IDs, independent source quotes and diagnostics. Machine output is immutable; human review is an append-only revision with reviewer, timestamp and rationale. Review status is separate from taxonomy Gold.
+
+Rules require the same element type and overlapping normalized terminology to propose a one-to-one candidate. They never infer technical equivalence. Ambiguous one-to-many matches remain unmatched with diagnostics. Unmatched means **not extracted or not aligned**, never “absent from the patent.” Similar cooling purpose does not make a vapor chamber, heat pipe, fan or interface material equivalent.
+
+For comparable numeric limitations, the comparison retains the original expressions, operators, lower/upper bounds, open/closed endpoints, units and percentage bases. Different parsed bounds are reported as `different` at the limitation level. Identical parsed bounds stay `undetermined` until semantic review. Ambiguous numbers, different units and different percentage bases stay `undetermined`; no implicit conversion is made. Evidence is checked against each side's own frozen Claim 1, publication number, URL and hash. Exact match does not establish semantic support.
+
+Machine alignments default to `undetermined`. `equivalent` requires a reviewed, accepted alignment with human semantic assessment, a rationale and exact evidence on both sides. It does not assert equal legal claim scope. No infringement, FTO, validity, value or technology ranking is produced.
+
+Public tests use only synthetic/mock patents. The frozen collection currently has one material feature record (EP4476289B1); it has no second closely comparable material record. A true material-to-material comparison needs another relevant source and reviewed feature extraction. Mixed real/synthetic demonstrations must be labeled **Synthetic Demonstration** and cannot be treated as a real two-patent study. The product page uses the frozen dataset; the browser test uses an isolated synthetic instance.

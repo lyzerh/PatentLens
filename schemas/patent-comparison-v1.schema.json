@@ -1,0 +1,27 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/lyzerh/PatentLens/schemas/patent-comparison-v1.schema.json",
+  "title":"Patent technical feature comparison v1",
+  "type":"object","additionalProperties":false,
+  "required":["comparisonSchemaVersion","comparisonId","patentA","patentB","featureSchemaVersion","sourceDocumentHashes","extractionRecordIds","extractionRevisionIds","comparisonMethod","reviewStatus","createdAt","alignments","ambiguousAlignments","limitationComparisons","relationComparisons","unmatchedFeatures","diagnostics"],
+  "properties":{
+    "comparisonSchemaVersion":{"const":"patent-comparison-v1"},"comparisonId":{"type":"string"},
+    "patentA":{"type":"string"},"patentB":{"type":"string"},"featureSchemaVersion":{"const":"patent-feature-v1"},
+    "sourceDocumentHashes":{"type":"object","required":["a","b"],"properties":{"a":{"type":"string"},"b":{"type":"string"}},"additionalProperties":false},
+    "extractionRecordIds":{"$ref":"#/$defs/sides"},"extractionRevisionIds":{"$ref":"#/$defs/sides"},
+    "comparisonMethod":{"const":"deterministic_rules_v1"},"reviewStatus":{"enum":["machine_candidate","review_draft","reviewed"]},"createdAt":{"type":"string"},
+    "alignments":{"type":"array","items":{"$ref":"#/$defs/alignment"}},
+    "ambiguousAlignments":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["featureAId","candidateBIds","alignmentStatus","reason"],"properties":{"featureAId":{"type":"string"},"candidateBIds":{"type":"array","items":{"type":"string"}},"alignmentStatus":{"const":"ambiguous_alignment"},"reason":{"type":"string"}}}},
+    "limitationComparisons":{"type":"array","items":{"$ref":"#/$defs/limitation"}},
+    "relationComparisons":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["relationA","relationB","relationTypeA","relationTypeB","comparisonResult","evidenceA","evidenceB","uncertaintyNotes"],"properties":{"relationA":{"type":"string"},"relationB":{"type":"string"},"relationTypeA":{"type":"string"},"relationTypeB":{"type":"string"},"comparisonResult":{"enum":["equivalent","similar","different","evidence_missing","undetermined"]},"evidenceA":{"$ref":"#/$defs/evidence"},"evidenceB":{"$ref":"#/$defs/evidence"},"uncertaintyNotes":{"type":"string"}}}},
+    "unmatchedFeatures":{"type":"object","required":["a","b"],"properties":{"a":{"type":"array","items":{"type":"string"}},"b":{"type":"array","items":{"type":"string"}}},"additionalProperties":false},
+    "diagnostics":{"type":"array","items":{"$ref":"#/$defs/diagnostic"}}
+  },
+  "$defs":{
+    "sides":{"type":"object","required":["a","b"],"properties":{"a":{"type":["string","null"]},"b":{"type":["string","null"]}},"additionalProperties":false},
+    "evidence":{"type":"object","required":["publicationNumber","section","sourceSpan","sourceUrl","documentHash","locator"],"properties":{"publicationNumber":{"type":"string"},"section":{"type":"string"},"sourceSpan":{"type":"string"},"sourceUrl":{"type":"string"},"documentHash":{"type":"string"},"locator":{"type":"string"}},"additionalProperties":false},
+    "alignment":{"type":"object","additionalProperties":false,"required":["alignmentId","featureAId","featureBId","featureType","alignmentStatus","comparisonResult","alignmentRationale","evidenceA","evidenceB","validationStatus","semanticSupport"],"properties":{"alignmentId":{"type":"string"},"featureAId":{"type":"string"},"featureBId":{"type":"string"},"featureType":{"const":"element"},"alignmentStatus":{"enum":["candidate","ambiguous_alignment","accepted","rejected"]},"comparisonResult":{"enum":["equivalent","similar","different","evidence_missing","undetermined"]},"alignmentRationale":{"type":"string"},"evidenceA":{"$ref":"#/$defs/evidence"},"evidenceB":{"$ref":"#/$defs/evidence"},"validationStatus":{"enum":["passed","failed"]},"semanticSupport":{"enum":["not_assessed","human_assessed"]}}},
+    "limitation":{"type":"object","additionalProperties":false,"required":["limitationA","limitationB","limitationType","operatorA","operatorB","valueA","valueB","unitA","unitB","referenceBasisA","referenceBasisB","originalTextA","originalTextB","comparisonResult","uncertaintyNotes","evidenceA","evidenceB"],"properties":{"limitationA":{"type":"string"},"limitationB":{"type":"string"},"limitationType":{"type":"string"},"operatorA":{"type":"string"},"operatorB":{"type":"string"},"valueA":{"type":"object"},"valueB":{"type":"object"},"unitA":{"type":["string","null"]},"unitB":{"type":["string","null"]},"referenceBasisA":{"type":["string","null"]},"referenceBasisB":{"type":["string","null"]},"originalTextA":{"type":"string"},"originalTextB":{"type":"string"},"comparisonResult":{"enum":["equivalent","similar","different","evidence_missing","undetermined"]},"uncertaintyNotes":{"type":"string"},"evidenceA":{"$ref":"#/$defs/evidence"},"evidenceB":{"$ref":"#/$defs/evidence"}}},
+    "diagnostic":{"type":"object","additionalProperties":false,"required":["dimension","code","pass","detail"],"properties":{"dimension":{"type":"string"},"code":{"type":"string"},"pass":{"type":"boolean"},"detail":{"type":"string"}}}
+  }
+}

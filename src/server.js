@@ -11,6 +11,7 @@ import { createPilotService } from "./pilot/service.ts";
 import { createThermalService } from "./pilot/thermal-service.ts";
 import { createThermalAnnotationService } from "./pilot/thermal-annotation.ts";
 import { createPatentFeatureService } from "./pilot/patent-features.ts";
+import { createPatentComparisonService } from "./pilot/patent-comparison.ts";
 import { createXaiKeySession } from "./xai-key-session.js";
 
 export const APP_VERSION = "0.6.0";
@@ -19,8 +20,9 @@ const PUBLIC = new URL("../public/", import.meta.url);
 const staticFiles = new Map([["/", ["index.html", "text/html; charset=utf-8"]], ["/app.js", ["app.js", "text/javascript; charset=utf-8"]], ["/browser-xai.js", ["browser-xai.js", "text/javascript; charset=utf-8"]], ["/model-presets.js", ["model-presets.js", "text/javascript; charset=utf-8"]], ["/style.css", ["style.css", "text/css; charset=utf-8"]], ["/pilot", ["pilot.html", "text/html; charset=utf-8"]], ["/pilot.js", ["pilot.js", "text/javascript; charset=utf-8"]], ["/pilot.css", ["pilot.css", "text/css; charset=utf-8"]], ["/pilot-v3", ["pilot-v3.html", "text/html; charset=utf-8"]], ["/pilot-v3.js", ["pilot-v3.js", "text/javascript; charset=utf-8"]], ["/pilot-v3.css", ["pilot-v3.css", "text/css; charset=utf-8"]], ["/pilot-thermal", ["pilot-thermal.html", "text/html; charset=utf-8"]], ["/pilot-thermal.js", ["pilot-thermal.js", "text/javascript; charset=utf-8"]], ["/pilot-thermal.css", ["pilot-thermal.css", "text/css; charset=utf-8"]]]);
 for (const [route,file,type] of [["/review-thermal","review-thermal.html","text/html; charset=utf-8"],["/review-thermal.js","review-thermal.js","text/javascript; charset=utf-8"],["/review-thermal.css","review-thermal.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const [route,file,type] of [["/patent-features","patent-features.html","text/html; charset=utf-8"],["/patent-features.js","patent-features.js","text/javascript; charset=utf-8"],["/patent-features.css","patent-features.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
+for (const [route,file,type] of [["/patent-compare","patent-compare.html","text/html; charset=utf-8"],["/patent-compare.js","patent-compare.js","text/javascript; charset=utf-8"],["/patent-compare.css","patent-compare.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const file of ["ui-lab.js", "ui-metrics.js"]) staticFiles.set("/" + file, [file, "text/javascript; charset=utf-8"]);
-for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
+for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
 staticFiles.set("/i18n/i18n.css",["i18n/i18n.css","text/css; charset=utf-8"]);
 function send(res, status, value) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -43,12 +45,13 @@ async function readBody(req, maxBytes = 1500000) {
   } catch { throw new AppError("INVALID_JSON", "请求格式不是 JSON 对象。"); }
 }
 
-export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, getXaiKey } = {}) {
+export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, getXaiKey } = {}) {
   const keySession = createXaiKeySession({ fetchImpl, getEnvironmentKey: getXaiKey });
   const pilot = createPilotService({ path: pilotPath, fetchImpl, retrievalFetchImpl, getKey: keySession.getKey });
   const thermal = createThermalService({ datasetPath: thermalDatasetPath, reviewPath: thermalReviewPath, smokePath: thermalSmokePath, legacyPath: pilotPath, fetchImpl, getKey: keySession.getKey });
   const annotation = createThermalAnnotationService({ datasetPath: thermalDatasetPath, storePath: thermalAnnotationPath });
   const features = createPatentFeatureService({datasetPath:thermalDatasetPath,storePath:featureStorePath});
+  const comparisons = createPatentComparisonService({datasetPath:thermalDatasetPath,featureStorePath,storePath:comparisonStorePath});
   return http.createServer(async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
@@ -113,6 +116,23 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
           if(pathname==="/api/patent-features/export")return send(res,200,await features.exportRecord(value.publicationNumber));
           throw new AppError("NOT_FOUND","接口不存在。",404);
         } catch(e){throw e instanceof AppError?e:new AppError("FEATURE_ERROR",e instanceof Error?e.message:"特征解析失败",400);}
+      }
+      if (pathname.startsWith("/api/patent-compare/")) {
+        if (!isLoopbackAddress(req.socket.remoteAddress)) throw new AppError("LOCAL_ONLY", "专利比较仅限本机访问。", 403);
+        if (origin !== "http://" + req.headers.host) throw new AppError("INVALID_ORIGIN", "专利比较需要同源请求。", 403);
+        if (!keySession.checkCsrf(req.headers["x-patent-csrf"])) throw new AppError("INVALID_CSRF", "页面验证已失效，请刷新后重试。", 403);
+        const value=await readBody(req,150000);
+        try {
+          if(pathname==="/api/patent-compare/list")return send(res,200,await comparisons.list());
+          if(pathname==="/api/patent-compare/source")return send(res,200,await comparisons.source(value.publicationNumber));
+          if(pathname==="/api/patent-compare/generate")return send(res,200,await comparisons.generate(value.patentA,value.patentB));
+          if(pathname==="/api/patent-compare/create")return send(res,200,await comparisons.create(value.patentA,value.patentB));
+          if(pathname==="/api/patent-compare/history")return send(res,200,await comparisons.listHistory());
+          if(pathname==="/api/patent-compare/load")return send(res,200,await comparisons.load(value.comparisonId));
+          if(pathname==="/api/patent-compare/review")return send(res,200,await comparisons.review(value.comparisonId,value.reviewer,value.status,value.alignments,value.rationale,value.expectedRevisionId));
+          if(pathname==="/api/patent-compare/export")return send(res,200,await comparisons.exportRecord(value.comparisonId));
+          throw new AppError("NOT_FOUND","接口不存在。",404);
+        } catch(e){throw e instanceof AppError?e:new AppError("COMPARISON_ERROR",e instanceof Error?e.message:"专利比较失败",400);}
       }
       if (["/api/thermal/smoke-preflight","/api/thermal/smoke-authorize","/api/thermal/smoke-run"].includes(pathname)) {
         if (!isLoopbackAddress(req.socket.remoteAddress)) throw new AppError("LOCAL_ONLY", "Smoke Test 仅限本机访问。", 403);
