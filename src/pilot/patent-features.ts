@@ -55,12 +55,12 @@ function numericLimitations(doc:ThermalDocument,parts:string[],elements:FeatureE
 export function extractRuleFeatures(doc:ThermalDocument):FeatureCandidate {
   const claim=claimText(doc);if(!claim)throw new Error('CLAIM_1_UNAVAILABLE');
   const parts=segments(claim),head=parts[0]??claim;
-  const subjectType:FeatureCandidate['technicalSubject']['type']=/\bmaterial\b|\bcomposition\b/i.test(head)?'Material / Composition':/\bmethod\b/i.test(head)?'Method':/\bsystem\b/i.test(head)?'System':/\bapparatus\b|\bdevice\b/i.test(head)?'Apparatus':'Other / Unknown';
+  const subjectType:FeatureCandidate['technicalSubject']['type']=/^\s*A method\b/i.test(head)?'Method':/\bmaterial\b|\bcomposition\b/i.test(head)?'Material / Composition':/\bmethod\b/i.test(head)?'Method':/\bsystem\b/i.test(head)?'System':/\bapparatus\b|\bdevice\b|\bvapou?r chamber\b|\bheat pipe\b/i.test(head)?'Apparatus':'Other / Unknown';
   const specs:[string,RegExp,string][]=[['resin',/\b(?:non-silicone\s+)?resin\b/i,'material'],['phase change material',/\bphase change material\b/i,'material'],['plasticizer',/\bplasticizer\b/i,'material'],['elastomeric agent',/\belastomeric agent\b/i,'material'],['particulate filler',/\b(?:thermally conductive\s+)?particulate filler\b/i,'material'],['vapor chamber',/\bvapou?r chamber\b/i,'component'],['heat pipe',/\bheat pipe\b/i,'component'],['cooling fan',/\b(?:cooling\s+)?fan\b/i,'component'],['temperature sensor',/\btemperature sensor\b/i,'sensor'],['controller',/\bcontroller\b/i,'controller']];
   const elements:FeatureElement[]=[];
-  const subjectPhrase=head.match(/\bthermal interface material\b|\b(?:cooling|thermal) apparatus\b|\bvapou?r chamber\b|\bheat pipe\b|\bthermal control method\b/i)?.[0]??head;
+  const subjectPhrase=head.match(/^A method(?:\s*\([^)]+\))?[^\n:]*|\bthermal interface material\b|\b(?:cooling|thermal) apparatus\b|\bvapou?r chamber\b|\bheat pipe\b|\bthermal control method\b/i)?.[0]??head;
   elements.push({elementId:'E-001',elementName:subjectPhrase.toLowerCase(),elementType:'claimed_subject',originalText:subjectPhrase,evidence:evidence(doc,'claims',subjectPhrase),confidenceStatus:'rule_candidate'});
-  for(const [name,re,type] of specs){const match=re.exec(claim);if(!match)continue;const part=parts.find(x=>x.includes(match[0]))??match[0];elements.push({elementId:`E-${String(elements.length+1).padStart(3,'0')}`,elementName:name,elementType:type,originalText:match[0],evidence:evidence(doc,'claims',match[0]),confidenceStatus:'rule_candidate'});}
+  for(const [name,re,type] of specs){const match=re.exec(claim);if(!match||elements.some(x=>x.elementName===name&&x.originalText.toLowerCase()===match[0].toLowerCase()))continue;elements.push({elementId:`E-${String(elements.length+1).padStart(3,'0')}`,elementName:name,elementType:type,originalText:match[0],evidence:evidence(doc,'claims',match[0]),confidenceStatus:'rule_candidate'});}
   const limitations=numericLimitations(doc,parts,elements);
   const relationships:FeatureRelation[]=[];
   const resin=elements.find(x=>x.elementName==='resin'),phase=elements.find(x=>x.elementName==='phase change material');
@@ -72,6 +72,48 @@ export function extractRuleFeatures(doc:ThermalDocument):FeatureCandidate {
   const sensor=elements.find(x=>x.elementName==='temperature sensor'),controller=elements.find(x=>x.elementName==='controller');
   const sensorConnection=claim.match(/temperature sensor connected to (?:a |the )?controller/i);
   if(sensor&&controller&&sensorConnection)relationships.push({relationId:`R-${String(relationships.length+1).padStart(3,'0')}`,relationType:'connected_to',fromElementId:sensor.elementId,toElementId:controller.elementId,originalText:sensorConnection[0],evidence:evidence(doc,'claims',sensorConnection[0]),semanticSupport:'not_assessed'});
+  const addElement=(name:string,match:RegExpMatchArray,type:string)=>{if(elements.some(x=>x.elementName===name))return;elements.push({elementId:`E-${String(elements.length+1).padStart(3,'0')}`,elementName:name,elementType:type,originalText:match[0],evidence:evidence(doc,'claims',match[0]),confidenceStatus:'rule_candidate'});};
+  const elementId=(name:string)=>elements.find(x=>x.elementName===name)?.elementId??null;
+  const addLimit=(span:string,type:FeatureLimitation['limitationType'],name:string|null)=>limitations.push({limitationId:`L-${String(limitations.length+1).padStart(3,'0')}`,limitationType:type,originalText:span,modifiesElementId:name?elementId(name):null,lowerBound:null,upperBound:null,unit:null,lowerInclusive:null,upperInclusive:null,referenceBasis:null,numericStatus:'not_numeric',evidence:evidence(doc,'claims',span)});
+  const addRelation=(span:string,type:FeatureRelation['relationType'],from:string,to:string)=>{const fromId=elementId(from),toId=elementId(to);if(fromId&&toId)relationships.push({relationId:`R-${String(relationships.length+1).padStart(3,'0')}`,relationType:type,fromElementId:fromId,toElementId:toId,originalText:span,evidence:evidence(doc,'claims',span),semanticSupport:'not_assessed'});};
+  if(subjectType==='Apparatus'&&/\bfirst cover\b/i.test(claim)){
+    for(const name of ['first cover','second cover','capillary structure','cooling medium','first conductive member','effective region','edge sealing region','accommodating cavity','first conductive layer','first insulation layer','second conductive layer']){
+      const match=claim.match(new RegExp(`\\b${name}\\s*\\(\\d+\\)`,'i'));if(match)addElement(name,match,'component');
+    }
+    for(const [pattern,type,from,to] of [
+      [/edge sealing region \(202\) is connected to a peripheral edge of the effective region \(201\)/i,'connected_to','edge sealing region','effective region'],
+      [/first cover \(10\) is fastened to the edge sealing region \(202\)/i,'connected_to','first cover','edge sealing region'],
+      [/first conductive member \(51\) is connected to the first conductive layer \(1\)/i,'connected_to','first conductive member','first conductive layer'],
+      [/first conductive member \(51\) is connected to the second cover \(20\)/i,'connected_to','first conductive member','second cover']
+    ] as const){const match=claim.match(pattern);if(match)addRelation(match[0],type,from,to);}
+    for(const [pattern,parent,children] of [
+      [/second cover \(20\) comprises an effective region \(201\) and an edge sealing region \(202\)/i,'second cover',['effective region','edge sealing region']],
+      [/first cover \(10\) comprises a first conductive layer \(1\), a first insulation layer \(2\), and a second conductive layer \(3\)/i,'first cover',['first conductive layer','first insulation layer','second conductive layer']]
+    ] as const){const match=claim.match(pattern);if(match)for(const child of children)addRelation(match[0],'contains',parent,child);}
+    for(const [pattern,name] of [
+      [/first cover \(10\) is spaced from the effective region \(201\) of the second cover \(20\)/i,'first cover'],
+      [/capillary structure \(30\) and the cooling medium \(40\) are located in the accommodating cavity \(101\)/i,'accommodating cavity'],
+      [/first insulation layer \(2\) is connected between the first conductive layer \(1\) and the second conductive layer \(3\)/i,'first insulation layer'],
+      [/second conductive layer \(3\) is located on a side that is of the first insulation layer \(2\) and that is close to the second cover \(20\)/i,'second conductive layer'],
+      [/first conductive layer \(1\) is electrically connected, through the first conductive member \(51\), to a surface that is of the second cover \(20\) and that is away from the accommodating cavity \(101\)/i,'first conductive layer']
+    ] as const){const match=claim.match(pattern);if(match)addLimit(match[0],'Structural Limitation',name);}
+  }
+  if(subjectType==='Method'){
+    for(const part of parts){
+      const actions=[...part.matchAll(/\b(?:determining|initiating|increasing|detecting|entering|changing)\b(?:\s*\([^)]+\))?/gi)];
+      for(let i=0;i<actions.length;i++){
+        const start=actions[i].index,end=actions[i+1]?.index??part.length;
+        const span=part.slice(start,end).replace(/(?:\s+and\s*|[;,\s]+)$/i,'').trim();
+        if(span)addLimit(span,'Process Step',subjectPhrase.toLowerCase());
+      }
+      const condition=part.match(/\bif\b[\s\S]*?\bthen\b/i);
+      if(condition)addLimit(condition[0],'Functional Limitation',subjectPhrase.toLowerCase());
+      const range=part.match(/the maximum temperature of the first temperature range is less than the minimum temperature of the second temperature range/i);
+      if(range)addLimit(range[0],'Functional Limitation',subjectPhrase.toLowerCase());
+      const threshold=part.match(/magnitude of the change in temperature over a certain amount of time exceeding a threshold/i);
+      if(threshold)addLimit(threshold[0],'Functional Limitation',subjectPhrase.toLowerCase());
+    }
+  }
   const descriptionFindings:DescriptionFinding[]=[];
   const description=doc.description??'';
   for(const [kind,re] of [
@@ -82,6 +124,12 @@ export function extractRuleFeatures(doc:ThermalDocument):FeatureCandidate {
   ] as const){const match=description.match(re);if(match)descriptionFindings.push({findingId:`D-${String(descriptionFindings.length+1).padStart(3,'0')}`,kind,text:match[0],evidence:evidence(doc,'description',match[0]),claimLimitation:false,semanticSupport:'not_assessed'});}
   const used=limitations.map(x=>x.originalText);
   const unresolvedSpans=parts.filter(part=>!elements.some(x=>part.includes(x.originalText))&&!used.some(x=>part.includes(x))).map(sourceSpan=>({sourceSpan,reason:'No reliable rule recognized a technical element or limitation.'}));
+  if(subjectType==='Apparatus'&&/\bfirst cover\b/i.test(claim))for(const pattern of [
+    /first cover \(10\) is spaced from the effective region \(201\) of the second cover \(20\), to enclose an accommodating cavity \(101\)/i,
+    /capillary structure \(30\) and the cooling medium \(40\) are located in the accommodating cavity \(101\)/i,
+    /first insulation layer \(2\) is connected between the first conductive layer \(1\) and the second conductive layer \(3\)/i
+  ]){const match=claim.match(pattern);if(match)unresolvedSpans.push({sourceSpan:match[0],reason:'Multi-component spatial relationship retained as text; individual relation roles need review.'});}
+  if(subjectType==='Method')for(const part of parts){const condition=part.match(/\bif\b[\s\S]*?\bthen\b/i);if(condition)unresolvedSpans.push({sourceSpan:condition[0],reason:'Condition-to-action branch and step order need review; Schema v1 has no explicit dependency field.'});}
   if(/melt viscosity of less than 10[0-9]+\s*Pa\*s/i.test(claim))unresolvedSpans.push({sourceSpan:claim.match(/melt viscosity of less than 10[0-9]+\s*Pa\*s/i)![0],reason:'Source may have lost exponent formatting; numeric bound intentionally unresolved.'});
   return {schemaVersion:FEATURE_SCHEMA_VERSION,identity:{publicationNumber:doc.publicationNumber,documentHash:doc.contentHash,sourceUrl:doc.sourceUrl,claimNumber:'1',sourceLanguage:'en'},technicalSubject:{type:subjectType,originalText:head,evidence:evidence(doc,'claims',head)},elements,limitations,relationships,descriptionFindings,unresolvedSpans,extractionMode:'rules',reviewStatus:'draft',provenance:'deterministic_rule_candidate_not_gold'};
 }

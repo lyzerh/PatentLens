@@ -6,7 +6,7 @@ import {createPatentFeatureService,extractRuleFeatures,validateFeatureCandidate,
 import {validateFrozenThermalDataset,type ThermalDataset,type ThermalDocument} from './thermal.ts';
 
 export const REPOSITORY_SCHEMA_VERSION='patent-feature-repository-v1';
-export const EXTRACTOR_VERSION='rules-v1.0.0';
+export const EXTRACTOR_VERSION='rules-v1.0.1';
 export type ExtractionStatus='extracted'|'partially_extracted'|'unparseable'|'source_unavailable'|'validation_failed'|'skipped_existing';
 export type BatchItem={publicationNumber:string;sourceAvailable:boolean;claim1Available:boolean;extractedElements:number;extractedLimitations:number;extractedRelations:number;unresolvedSpans:number;extractionStatus:ExtractionStatus;validationStatus:'accepted'|'rejected'|'not_run';extractionRecordId:string|null;message:string};
 export type RepositoryRecord={extractionRecordId:string;publicationNumber:string;documentHash:string;sourceUrl:string;documentVersion:string;sourceDatasetId:string;featureSchemaVersion:'patent-feature-v1';extractorVersion:string;extractionMethod:'rules'|'llm';provider?:string;model?:string;promptHash?:string;runConfigHash:string;createdAt:string;validationStatus:'accepted';extractionStatus:'extracted'|'partially_extracted';featureStoreRecordId:string|null;candidate:FeatureCandidate;validation:ReturnType<typeof validateFeatureCandidate>};
