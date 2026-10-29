@@ -2,6 +2,7 @@ import {readFile,mkdir,open,rename,unlink,writeFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {redact} from '../errors.js';
 import {validateFrozenThermalDataset,type ThermalDataset,type ThermalDocument} from './thermal.ts';
 import {validateFeatureCandidate,type FeatureCandidate} from './patent-features.ts';
 import {createPatentRepositoryService} from './patent-repository.ts';
@@ -58,6 +59,6 @@ export function createFeatureLlmService(options:{datasetPath?:string;repositoryS
     }
     return {attempts:results.map(({rawResponse,parsedCandidate,...a})=>({...a,rawResponseAvailable:rawResponse!==null,parsedCandidateAvailable:parsedCandidate!==null})),completed:results.filter(x=>x.status==='completed').length,validationFailures:results.filter(x=>x.status==='validation_failed').length,unknownCosts:results.filter(x=>x.costKind==='unknown').length};
   }finally{busy=false;}};
-  const inspect=async(id:unknown)=>{if(typeof id!=='string')throw new Error('INVALID_ATTEMPT_ID');const attempt=(await read()).attempts.find(x=>x.attemptId===id);if(!attempt)throw new Error('ATTEMPT_NOT_FOUND');return attempt;};
+  const inspect=async(id:unknown)=>{if(typeof id!=='string')throw new Error('INVALID_ATTEMPT_ID');const attempt=(await read()).attempts.find(x=>x.attemptId===id);if(!attempt)throw new Error('ATTEMPT_NOT_FOUND');return redact(attempt,[getKey()]);};
   return {publicState,preflight,authorize,execute,inspect};
 }
