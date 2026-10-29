@@ -12,6 +12,7 @@ const files = [
   "test/thermal-public-safety.test.js",
   "test/thermal-annotation-public.test.js",
   "test/patent-features-public.test.js",
+  "test/claim-coverage-public.test.js",
   "test/patent-comparison-public.test.js",
   "test/patent-repository-public.test.js",
   "test/patent-repository-audit-public.test.js",
