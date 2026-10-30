@@ -23,6 +23,8 @@ test('workspace and legacy routes remain reachable',async()=>{
 
 test('four task paths and bilingual labels have distinct destinations',async()=>{
   const html=await readFile(new URL('../public/workspace.html',import.meta.url),'utf8');
+  const script=await readFile(new URL('../public/workspace.js',import.meta.url),'utf8');
+  assert.match(script,/location\.replace\('\/patent-search'\+location\.hash\)/);
   for(const path of ['/patent-features','/patent-repository?task=search','/patent-repository?task=compare','/patent-repository?task=collections'])assert.ok(html.includes(`href="${path}"`),path);
   for(const key of ['workspace.brand','workspace.path.extract','workspace.path.search','workspace.path.compare','workspace.path.collections','workspace.nav.advanced'])assert.ok(locale.zh[key]&&locale.en[key],key);
 });

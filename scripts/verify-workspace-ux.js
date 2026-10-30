@@ -33,6 +33,7 @@ try{
   await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.activeElement!==document.body));
   for(const width of [1440,768,390]){await page.setViewportSize({width,height:850});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`workspace overflow at ${width}`);if(width===390)await page.screenshot({path:join(dir,'workspace-mobile.png'),fullPage:true});}
   await page.goto(base+'/patent-search');assert.equal(await page.locator('#research-main').count(),1);
+  await page.goto(base+'/#read-stage');await page.waitForURL(/\/patent-search#read-stage$/);
   await page.goto(base+'/pilot-thermal');assert.equal(await page.locator('main').count(),1);
   // The legacy thermal page expects its full frozen dataset, not this four-document synthetic fixture.
   errors.length=0;
