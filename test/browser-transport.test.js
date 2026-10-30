@@ -115,7 +115,8 @@ test("HTTP serves browser module and new endpoints without performing external f
   t.after(() => closeServer(server));
   const base = "http://127.0.0.1:" + server.address().port;
   const post = (route, body, origin) => fetch(base + route, { method: "POST", headers: { "Content-Type": "application/json", "X-Patent-Client": "workbench", ...(origin ? { Origin: origin } : {}) }, body: JSON.stringify(body) });
-  const page = await fetch(base + "/"); const html = await page.text();
+  const workspace = await fetch(base + "/"); assert.match(await workspace.text(), /专利技术研究工作台/);
+  const page = await fetch(base + "/patent-search"); const html = await page.text();
   assert.match(html, /id="transport"/); assert.match(html, /id="network-diagnose"/);
   assert.match(page.headers.get("content-security-policy"), /connect-src 'self' https:\/\/api.x.ai https:\/\/us.api.x.ai;/);
   assert.equal((await fetch(base + "/browser-xai.js")).status, 200);

@@ -248,7 +248,8 @@ test("HTTP surface serves UI, rejects cross-origin writes and runs the whole moc
   t.after(() => new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); }));
   const base = "http://127.0.0.1:" + server.address().port;
   const request = (route, value, headers = {}) => fetch(base + route, { method: "POST", headers: { "Content-Type": "application/json", "X-Patent-Client": "workbench", ...headers }, body: JSON.stringify(value) });
-  const page = await fetch(base + "/");
+  const home = await fetch(base + "/"); assert.match(await home.text(), /专利技术研究工作台/);
+  const page = await fetch(base + "/patent-search");
   assert.equal(page.status, 200); assert.match(await page.text(), /id="search-form"/);
   const presets = await fetch(base + "/model-presets.js");
   assert.equal(presets.status, 200); assert.match(await presets.text(), /grok-build-0.1/);

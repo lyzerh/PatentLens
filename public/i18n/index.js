@@ -9,9 +9,10 @@ import review from './review.js';
 import features from './features.js';
 import compare from './compare.js';
 import repository from './repository.js';
+import workspace from './workspace.js';
 
 const storageKey = 'patentlens.locale';
-const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh,...features.zh,...compare.zh,...repository.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en,...features.en,...compare.en,...repository.en}};
+const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh,...features.zh,...compare.zh,...repository.zh,...workspace.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en,...features.en,...compare.en,...repository.en,...workspace.en}};
 let language = 'zh-CN';
 try { if (localStorage.getItem(storageKey) === 'en') language = 'en'; } catch {}
 const listeners = new Set();

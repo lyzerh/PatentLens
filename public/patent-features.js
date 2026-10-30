@@ -1,4 +1,5 @@
-import {t,initializeI18n,onLanguageChange} from './i18n/index.js';
+import {t,onLanguageChange} from './i18n/index.js';
+import {mountWorkspaceNavigation} from './workspace-nav.js';
 import {reviewCoverage,compareCoverage} from './claim-coverage.js';
 const $=id=>document.getElementById(id);
 const node=(tag,value,className)=>{const el=document.createElement(tag);if(value!==undefined)el.textContent=String(value);if(className)el.className=className;return el;};
@@ -73,7 +74,9 @@ function renderHistory(){const root=$('history');root.replaceChildren();if(!reco
 function render(){renderSource();renderStructure();renderCoverage();renderDiagnostics();renderHistory();$('create').disabled=!candidate||Boolean(record)||Boolean(repositorySnapshot);$('save-draft').disabled=!record;$('save-reviewed').disabled=!record;$('export-json').disabled=!record&&!repositorySnapshot;$('export-md').disabled=!record&&!repositorySnapshot;}
 function setCandidate(next,report,edit=true){candidate=next;validation=report;if(edit)$('editor').value=JSON.stringify(next,null,2);render();}
 function download(name,content,type){const a=node('a');const url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-initializeI18n();onLanguageChange(()=>render());
+mountWorkspaceNavigation('extract', [['select',null,false],['extract',null,true],['evidence','#coverage-review',false],['save','#create',false]]);onLanguageChange(()=>render());
+const nextStep=node('a',t('workspace.path.search'),'workspace-next');nextStep.href='/patent-repository?task=search';$('message').after(nextStep);
+onLanguageChange(()=>{nextStep.textContent=t('workspace.path.search');});
 $('patent').addEventListener('change',guarded(async()=>{repositorySnapshot=null;coverageSnapshots={};source=await api('source',{publicationNumber:currentId()});record=await api('load',{publicationNumber:currentId()});const params=new URLSearchParams(location.search),requested=params.get('record');if(requested&&params.get('patent')===currentId()){const pinned=await repositoryRecord(requested);if(pinned.record.publicationNumber!==currentId()||pinned.currentRevisionId!==(params.get('revision')||null))throw new Error('FEATURE_REVISION_CONFLICT');if(!pinned.record.featureStoreRecordId){repositorySnapshot=pinned;record=null;setCandidate(pinned.candidate,pinned.validation);message(t('features.repositorySnapshot'));await loadCoverageSnapshots();return;}}if(record){const current=record.revisions.at(-1);setCandidate(current?.candidate??record.machineOutput,current?.validation??record.machineValidation);}else{candidate=null;validation=null;$('editor').value='';render();}message(source.claim1?'':t('features.noClaim'));await loadCoverageSnapshots();}));
 for(const [id,mode] of [['extract','rules'],['mock','mock_llm']])$(id).addEventListener('click',guarded(async()=>{const result=await api('extract',{publicationNumber:currentId(),mode});setCandidate(result.candidate,result.validation);message(t('features.candidateReady'));}));
 $('create').addEventListener('click',guarded(async()=>{if(!candidate)throw new Error(t('features.noCandidate'));record=await api('create',{publicationNumber:currentId(),mode:candidate.extractionMode==='mock_llm'?'mock_llm':'rules'});setCandidate(record.machineOutput,record.machineValidation);message(t('features.saved'));}));

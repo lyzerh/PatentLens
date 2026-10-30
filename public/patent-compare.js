@@ -1,4 +1,5 @@
-import {t,initializeI18n,onLanguageChange} from './i18n/index.js';
+import {t,onLanguageChange} from './i18n/index.js';
+import {mountWorkspaceNavigation} from './workspace-nav.js';
 const $=id=>document.getElementById(id);
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n;};
 let csrf,items=[],comparison=null,record=null,edited=[],sources={a:null,b:null};
@@ -15,7 +16,14 @@ function render(){renderSide('a');renderSide('b');const root=$('alignments');roo
 async function loadSources(){const {patentA,patentB,refA,refB}=pair();if(!patentA||!patentB||patentA===patentB)throw new Error(t('compare.noPair'));[sources.a,sources.b]=await Promise.all([api('source',{publicationNumber:patentA,ref:refA}),api('source',{publicationNumber:patentB,ref:refB})]);}
 async function refreshHistory(){const history=await api('history');const selection=$('history'),selected=selection.value;selection.replaceChildren(el('option','—'));selection.firstChild.value='';for(const h of history){const option=el('option',h.patentA+' / '+h.patentB+' · '+h.createdAt);option.value=h.comparisonId;selection.append(option);}selection.value=selected;}
 function download(name,content,type){const link=el('a');const url=URL.createObjectURL(new Blob([content],{type}));link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-initializeI18n();onLanguageChange(()=>render());$('filter').addEventListener('change',render);
+mountWorkspaceNavigation('compare', [['select','/patent-repository?task=compare',false],['compare',null,true],['evidence','#evidence',false],['project',null,false]]);onLanguageChange(()=>render());$('filter').addEventListener('change',render);
+const back=el('a',t('workspace.back.results'),'workspace-next');back.href='/patent-repository?task=compare';
+const next=el('a',t('workspace.next.project'),'workspace-next');
+const returnParams=new URLSearchParams({task:'collections'});
+for(const key of ['a','b','aRecord','bRecord','aRevision','bRevision','collectionId'])if(params.has(key))returnParams.set(key,params.get(key));
+next.href='/patent-repository?'+returnParams;back.href='/patent-repository?'+new URLSearchParams({...Object.fromEntries(returnParams),task:'compare'});
+$('message').after(back,document.createTextNode(' '),next);
+onLanguageChange(()=>{back.textContent=t('workspace.back.results');next.textContent=t('workspace.next.project');});
 for(const id of ['patent-a','patent-b'])$(id).addEventListener('change',()=>{pinned=null;});
 $('generate').addEventListener('click',guarded(async()=>{await loadSources();comparison=await api('generate',pair());record=null;edited=structuredClone(comparison.alignments);render();msg(t('compare.preview'));}));
 $('save').addEventListener('click',guarded(async()=>{if(!comparison)throw new Error(t('compare.noRecord'));record=await api('create',pair());comparison=record.machine;edited=structuredClone(comparison.alignments);await refreshHistory();$('history').value=comparison.comparisonId;render();msg(t('compare.saved'));}));

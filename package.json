@@ -10,6 +10,7 @@
     "test": "node --test",
     "test:public": "node scripts/run-public-tests.js",
     "test:download": "node scripts/verify-portfolio-download.js",
+    "test:workspace-ui": "node scripts/verify-workspace-ux.js",
     "test:local": "node --test",
     "typecheck": "tsc --noEmit",
     "test:live": "node scripts/verify-live-retrieval.js",
