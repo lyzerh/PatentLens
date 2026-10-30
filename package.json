@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test:live": "node scripts/verify-live-retrieval.js",
     "test:epo-live": "node scripts/verify-live-epo.js",
-    "demo": "node src/run-demo.js"
+    "demo": "node src/run-demo.js",
+    "demo:portfolio": "node scripts/start-portfolio-demo.js"
   },
   "engines": {
     "node": ">=24"
