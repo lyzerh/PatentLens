@@ -14,6 +14,19 @@ const materialB=make('EP9000002A1','A thermal interface material, comprising:\na
 const deviceA=make('EP9000003A1','A cooling apparatus comprising: a vapor chamber thermally coupled to a heat pipe; a cooling fan; a temperature sensor connected to a controller.');
 const deviceB=make('EP9000004A1','A cooling apparatus comprising: a heat pipe thermally coupled to a cooling fan; a temperature sensor connected to a controller.');
 const source=doc=>({doc,candidate:extractRuleFeatures(doc),recordId:null,revisionId:null});
+test('exact named subject-to-component correspondence is only an evidence-backed candidate',()=>{
+  const a=make('EP9000005A1','A vapor chamber, comprising a fictional wick.'),b=make('EP9000006A1','A cooling apparatus comprising: a vapor chamber; a fictional grille.');
+  const result=compareFeatureSources(source(a),source(b));
+  assert.equal(result.alignments.length,1);
+  assert.equal(result.alignments[0].comparisonResult,'undetermined');
+  assert.equal(result.alignments[0].semanticSupport,'not_assessed');
+  assert.match(result.alignments[0].alignmentRationale,/role and technical equivalence require human review/);
+  assert.equal(result.alignments[0].evidenceA.publicationNumber,a.publicationNumber);
+  assert.equal(result.alignments[0].evidenceB.publicationNumber,b.publicationNumber);
+  assert.ok(result.unmatchedFeatures.b.length>0);
+  const unrelated=make('EP9000007A1','A cooling apparatus comprising a heat pipe and a fictional grille.');
+  assert.equal(compareFeatureSources(source(a),source(unrelated)).alignments.length,0);
+});
 async function fixture(){await mkdir(resolve('data'),{recursive:true});const dir=await mkdtemp(join(resolve('data'),'comparison-synthetic-'));const datasetPath=join(dir,'dataset.json'),storePath=join(dir,'comparisons.json'),featureStorePath=join(dir,'features.json');await writeFile(datasetPath,JSON.stringify(freezeThermalDataset([materialA,materialB,deviceA,deviceB],[],[],'synthetic-comparison-v1')));return {dir,datasetPath,storePath,featureStorePath,service:createPatentComparisonService({datasetPath,storePath,featureStorePath})};}
 
 test('synthetic material pair preserves ratios, units, bounds and source evidence',()=>{const c=compareFeatureSources(source(materialA),source(materialB));assert.equal(c.comparisonSchemaVersion,'patent-comparison-v1');assert.ok(c.diagnostics.every(x=>x.pass));assert.ok(c.alignments.length>=4);assert.ok(c.alignments.every(x=>x.comparisonResult==='undetermined'&&x.semanticSupport==='not_assessed'));const ratio=c.limitationComparisons.find(x=>x.limitationType==='Composition Ratio');assert.equal(ratio.referenceBasisA,'non-silicone resin');assert.equal(ratio.referenceBasisB,'total composition');assert.equal(ratio.comparisonResult,'undetermined');const particle=c.limitationComparisons.find(x=>x.originalTextA.includes('particle size'));assert.equal(particle.operatorA,'<');assert.equal(particle.operatorB,'<');assert.deepEqual([particle.valueA.upper,particle.valueB.upper],[25,20]);assert.equal(particle.comparisonResult,'different');assert.ok(c.limitationComparisons.some(x=>x.originalTextA.includes('thermal impedance')&&x.comparisonResult==='different'));});
