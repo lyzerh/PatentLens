@@ -11,9 +11,10 @@ import compare from './compare.js';
 import repository from './repository.js';
 import workspace from './workspace.js';
 import guided from './guided.js';
+import registry from './registry.js';
 
 const storageKey = 'patentlens.locale';
-const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh,...features.zh,...compare.zh,...repository.zh,...workspace.zh,...guided.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en,...features.en,...compare.en,...repository.en,...workspace.en,...guided.en}};
+const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh,...features.zh,...compare.zh,...repository.zh,...workspace.zh,...guided.zh,...registry.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en,...features.en,...compare.en,...repository.en,...workspace.en,...guided.en,...registry.en}};
 let language = 'zh-CN';
 try { if (localStorage.getItem(storageKey) === 'en') language = 'en'; } catch {}
 const listeners = new Set();

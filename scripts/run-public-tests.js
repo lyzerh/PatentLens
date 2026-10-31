@@ -8,6 +8,7 @@ const files = [
   "test/pilot-v3.test.js",
   "test/pilot.test.js",
   "test/pilot-metadata-public.test.js",
+  "test/registry-workspace-public.test.js",
   "test/pipeline.test.js",
   "test/retrieval-network.test.js",
   "test/thermal-public-safety.test.js",
