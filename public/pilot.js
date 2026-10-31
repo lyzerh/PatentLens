@@ -1,4 +1,5 @@
 import {t,onLanguageChange,initializeI18n} from './i18n/index.js';
+import {trustBadge} from './trust-status.js';
 initializeI18n();
 const $ = id => document.getElementById(id);
 const fieldKeys = ['publicationNumber','title','abstract','assignees','inventors','priorityDate','filingDate','publicationDate','jurisdiction','cpc','ipc','familyId','legalStatus','independentClaims'];
@@ -60,6 +61,7 @@ function renderDetail() {
   const r = current(), box = $("record-detail"); box.replaceChildren();
   if (!r) { box.append(node("p", t('pilot.selectRecord'), "empty")); return; }
   const heading = node("h3", r.publicationNumber + " · " + (r.title || t('pilot.titleMissing'))); box.append(heading);
+  box.append(trustBadge(t,'registered'),document.createTextNode(' '),trustBadge(t,r.metadataCorrections?.length?'corrected':'unchanged'));
   const research=node('a',t('pilot.openWorkspace'));research.href='/workspace?registry='+encodeURIComponent(r.id);box.append(research);
   box.append(node("p", t('pilot.coverage',{coverage:r.coverage,date:r.importedAt,source:r.sourceKind}), "hint"));
   if (r.sourceUrl) { const a = node("a", t('pilot.sourceLink')); a.href = r.sourceUrl; a.target = "_blank"; a.rel = "noopener noreferrer"; box.append(a); }

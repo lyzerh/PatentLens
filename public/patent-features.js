@@ -1,6 +1,7 @@
 import {t,onLanguageChange} from './i18n/index.js';
 import {mountWorkspaceNavigation} from './workspace-nav.js';
 import {reviewCoverage,compareCoverage} from './claim-coverage.js';
+import {trustBadge,featureTrust,evidenceTrust} from './trust-status.js';
 const $=id=>document.getElementById(id);
 const node=(tag,value,className)=>{const el=document.createElement(tag);if(value!==undefined)el.textContent=String(value);if(className)el.className=className;return el;};
 let csrf,items=[],source=null,candidate=null,validation=null,record=null,repositorySnapshot=null,coverageSnapshots={};
@@ -61,7 +62,7 @@ function renderCoverage(){
     }
   }
 }
-function renderDiagnostics(){const summary=$('diagnostic-summary'),list=$('diagnostic-list');summary.replaceChildren();list.replaceChildren();if(!validation)return;summary.append(node('p',t('features.coverage',validation.coverage)),node('p',t('features.notGold')));
+function renderDiagnostics(){const summary=$('diagnostic-summary'),list=$('diagnostic-list');summary.replaceChildren();list.replaceChildren();if(!validation)return;summary.append(trustBadge(t,validation.schemaValid?'schemaPass':'schemaFail'),document.createTextNode(' '),trustBadge(t,evidenceTrust(validation)),document.createTextNode(' '),trustBadge(t,record?featureTrust(record):repositorySnapshot?featureTrust(repositorySnapshot):'machine'),node('p',t('trust.generatedBy',{method:t('trust.method.'+candidate.extractionMode)})),node('p',t('features.coverage',validation.coverage)),node('p',t('features.notGold')));
   for(const dimension of ['schema','source_exact','numeric_integrity','relation_consistency','semantic_support']){
     const rows=validation.diagnostics.filter(d=>d.dimension===dimension);
     summary.append(node('p',dimension+': '+rows.filter(d=>d.pass).length+'/'+rows.length+(dimension==='semantic_support'?' · '+t('features.semanticPending'):'')));
