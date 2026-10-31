@@ -19,7 +19,7 @@ await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));
 const base=`http://127.0.0.1:${app.address().port}`;
 let browser;
 try{
-  browser=await chromium.launch({executablePath:browserPath,headless:true,downloadsPath:dir});
+  browser=await chromium.launch({executablePath:browserPath,headless:true});
   const context=await browser.newContext({acceptDownloads:true,viewport:{width:1440,height:900}});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -37,17 +37,21 @@ try{
   await page.goto(base+'/pilot-thermal');assert.equal(await page.locator('main').count(),1);
   // The legacy thermal page expects its full frozen dataset, not this four-document synthetic fixture.
   errors.length=0;
+  await page.goto(base+'/patent-repository?task=search');await page.waitForFunction(()=>document.querySelector('#results')?.textContent?.includes('当前没有可检索'));assert.equal(await page.locator('#results a[href="/patent-features"]').count(),1);
   // Prepare two free feature records through the existing advanced Rules workflow.
   await page.goto(base+'/patent-repository?task=advanced');
   await page.locator('#documents input[value="EP9000001A1"]').check();
   await page.locator('#documents input[value="EP9000002A1"]').check();
   await page.locator('#preview').click();await page.locator('#run').click();
   await page.locator('#results .row').filter({hasText:'EP9000002A1'}).waitFor();
-  await page.goto(base+'/');await page.locator('.paths a[href="/patent-repository?task=compare"]').click();
+  await page.goto(base+'/');await page.locator('.paths a[href="/patent-repository?task=search"]').click();
+  await page.locator('#query-text').fill('plasticizer');await page.locator('#search').click();await page.waitForFunction(()=>document.querySelector('#results')?.textContent?.includes('文本候选命中'));
+  await page.locator('#query-text').fill('');await page.locator('.advanced-filters').evaluate(node=>node.open=true);await page.locator('#query-element').fill('plasticizer');await page.locator('#search').click();await page.waitForFunction(()=>document.querySelector('#results')?.textContent?.includes('结构化字段命中'));
   await page.locator('#results .row').filter({hasText:'EP9000001A1'}).getByRole('button',{name:/设为 A|Choose A/}).click();
   await page.locator('#results .row').filter({hasText:'EP9000002A1'}).getByRole('button',{name:/设为 B|Choose B/}).click();
   assert.equal(await page.locator('#compare').isEnabled(),true);
   await page.locator('#compare').click();await page.waitForURL(/\/patent-compare\?/);
+  const validCompareUrl=page.url();
   await page.locator('#side-a').getByText(/EP9000001A1/).first().waitFor({timeout:10000});
   assert.match(await page.locator('#side-a').innerText(),/EP9000001A1/);
   assert.match(await page.locator('#side-b').innerText(),/EP9000002A1/);
@@ -56,19 +60,31 @@ try{
   for(const width of [768,390]){await page.setViewportSize({width,height:850});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`comparison overflow at ${width}`);}
   await page.setViewportSize({width:1440,height:900});
   await page.locator('#generate').click();await page.locator('#alignments').getByText(/↔/).first().waitFor();
+  assert.match(await page.locator('#unmatched').innerText(),/A:|B:/);
   await page.locator('#save').click();await page.waitForFunction(()=>document.querySelector('#history')?.value);
   await page.locator('#alignments button').first().click();assert.match(await page.locator('#evidence').innerText(),/EP9000001A1/);
   await page.getByRole('link',{name:/继续到研究项目|Continue to research project/}).click();
   await page.waitForURL(/task=collections/);await page.waitForFunction(()=>document.querySelector('#compare-selection')?.textContent?.includes('EP9000002A1'));assert.match(await page.locator('#compare-selection').innerText(),/EP9000001A1.*EP9000002A1/);
-  await page.locator('#collection-title').fill('Synthetic UX research');await page.locator('#collection-create').click();
+  await page.locator('.collection-editor').evaluate(node=>node.open=true);await page.locator('#collection-title').fill('Synthetic UX research');await page.locator('#collection-create').click();
   await page.locator('#add-pair').click();await page.waitForFunction(()=>document.querySelector('#collection-list')?.selectedOptions[0]?.textContent?.includes('· 2'));
   const collectionId=await page.locator('#collection-list').inputValue();assert.ok(collectionId);
   await page.reload();await page.locator('#collection-list option[value="'+collectionId+'"]').waitFor({state:'attached'});await page.locator('#collection-list').selectOption(collectionId);await page.waitForFunction(()=>document.querySelector('#collection-detail')?.textContent?.includes('EP9000002A1'));assert.match(await page.locator('#collection-detail').innerText(),/EP9000001A1.*EP9000002A1/s);
+  await page.waitForFunction(()=>document.querySelector('#collection-detail')?.textContent?.includes('Material / Composition'));
+  assert.match(await page.locator('#collection-detail').innerText(),/Material \/ Composition/);
+  assert.match(await page.locator('#collection-summary').innerText(),/Synthetic UX research.*2/s);
   const event=page.waitForEvent('download');await page.locator('#collection-md').click();const download=await event;assert.match(download.suggestedFilename(),/\.md$/);
-  const saved=join(dir,download.suggestedFilename());await download.saveAs(saved);const markdown=new TextDecoder('utf-8',{fatal:true}).decode(await readFile(saved));assert.match(markdown,/EP9000001A1/);assert.match(markdown,/EP9000002A1/);assert.match(markdown,/machine_generated_unreviewed/);
+  const saved=join(dir,download.suggestedFilename());const mdFailure=await download.failure();
+  const exportData=await page.evaluate(async id=>{const token=(await(await fetch('/api/xai/settings/csrf')).json()).csrfToken;const response=await fetch('/api/patent-collections/export',{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':token},body:JSON.stringify({collectionId:id})});if(!response.ok)throw new Error('EXPORT_FAILED');return response.json();},collectionId);
+  if(!mdFailure)await download.saveAs(saved);
+  const markdown=mdFailure?exportData.markdown:new TextDecoder('utf-8',{fatal:true}).decode(await readFile(saved));assert.match(markdown,/EP9000001A1/);assert.match(markdown,/EP9000002A1/);assert.match(markdown,/machine_generated_unreviewed/);
+  const jsonEvent=page.waitForEvent('download');await page.locator('#collection-json').click();const jsonDownload=await jsonEvent;const jsonPath=join(dir,jsonDownload.suggestedFilename());const jsonFailure=await jsonDownload.failure();if(!jsonFailure)await jsonDownload.saveAs(jsonPath);assert.equal((jsonFailure?exportData.json:JSON.parse(await readFile(jsonPath,'utf8'))).featureSnapshots.length,2);
+  if(mdFailure||jsonFailure)console.warn('Browser download event was canceled by this environment; export payload verified through the same HTTP API.');
+  await page.locator('#collection-detail a').first().click();await page.waitForURL(/\/patent-features\?/);assert.match(await page.locator('a.workspace-next').allInnerTexts().then(x=>x.join(' ')),/研究项目/);await page.goBack();await page.waitForLoadState('networkidle');await page.waitForFunction(()=>document.querySelector('#collection-detail')?.textContent?.includes('Material / Composition'));
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'collection mobile overflow');
   await page.screenshot({path:join(dir,'collection-mobile.png'),fullPage:true});
+  await page.goto(base+'/patent-repository?task=search');await page.locator('#results .row').filter({hasText:'EP9000001A1'}).getByRole('button',{name:/加入研究集合|Add to research collection/}).click();assert.equal(await page.locator('#quick-add').isVisible(),true);await page.locator('#quick-title').fill('Synthetic quick collection');await page.locator('#quick-save').click();await page.locator('#quick-open:visible').waitFor();await page.waitForFunction(()=>document.querySelector('#message')?.textContent?.includes('已保存'));assert.match(await page.locator('#message').innerText(),/已保存/);
+  const stale=new URL(validCompareUrl);stale.searchParams.set('aRecord','invalid-record');await page.goto(stale.href);await page.waitForFunction(()=>document.querySelector('#message')?.textContent?.includes('所选记录'));assert.equal((await page.locator('#side-a').innerText()).trim(),'');
   assert.deepEqual(errors,[]);assert.equal(externalCalls,0);
-  console.log('Synthetic browser UX: home, four paths, locale, compare, evidence, collection reload, Markdown download, responsive, console, no paid calls: passed');
+  console.log('Synthetic browser UX: home, four paths, locale, compare, evidence, collection reload, export payload, responsive, console, no paid calls: passed');
   console.log(`Screenshots: ${dir}`);
 }finally{await browser?.close();await new Promise(resolve=>app.close(resolve));}

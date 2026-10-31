@@ -26,7 +26,7 @@ for (const [route,file,type] of [["/patent-features","patent-features.html","tex
 for (const [route,file,type] of [["/patent-compare","patent-compare.html","text/html; charset=utf-8"],["/patent-compare.js","patent-compare.js","text/javascript; charset=utf-8"],["/patent-compare.css","patent-compare.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const [route,file,type] of [["/patent-repository","patent-repository.html","text/html; charset=utf-8"],["/patent-repository.js","patent-repository.js","text/javascript; charset=utf-8"],["/patent-repository.css","patent-repository.css","text/css; charset=utf-8"],["/patent-repository-audit.js","patent-repository-audit.js","text/javascript; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const file of ["ui-lab.js", "ui-metrics.js"]) staticFiles.set("/" + file, [file, "text/javascript; charset=utf-8"]);
-for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js", "repository.js", "workspace.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
+for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js", "repository.js", "workspace.js", "guided.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
 staticFiles.set("/i18n/i18n.css",["i18n/i18n.css","text/css; charset=utf-8"]);
 function send(res, status, value) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });

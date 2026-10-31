@@ -22,7 +22,8 @@ const files = [
   "test/thermal-smoke-ui.test.js",
   "test/ui-lab.test.js",
   "test/workbench.test.js",
-  "test/workspace-public.test.js"
+  "test/workspace-public.test.js",
+  "test/guided-workflow-public.test.js"
 ];
 const result = spawnSync(process.execPath, ["--test", ...files], {
   stdio: "inherit",
