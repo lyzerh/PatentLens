@@ -58,7 +58,7 @@ export function extractRuleFeatures(doc:ThermalDocument):FeatureCandidate {
   const subjectType:FeatureCandidate['technicalSubject']['type']=/^\s*A method\b/i.test(head)?'Method':/\bmaterial\b|\bcomposition\b/i.test(head)?'Material / Composition':/\bmethod\b/i.test(head)?'Method':/\bsystem\b/i.test(head)?'System':/\bapparatus\b|\bdevice\b|\bvapou?r chamber\b|\bheat pipe\b/i.test(head)?'Apparatus':'Other / Unknown';
   const specs:[string,RegExp,string][]=[['resin',/\b(?:non-silicone\s+)?resin\b/i,'material'],['phase change material',/\bphase change material\b/i,'material'],['plasticizer',/\bplasticizer\b/i,'material'],['elastomeric agent',/\belastomeric agent\b/i,'material'],['particulate filler',/\b(?:thermally conductive\s+)?particulate filler\b/i,'material'],['vapor chamber',/\bvapou?r chamber\b/i,'component'],['heat pipe',/\bheat pipe\b/i,'component'],['cooling fan',/\b(?:cooling\s+)?fan\b/i,'component'],['temperature sensor',/\btemperature sensor\b/i,'sensor'],['controller',/\bcontroller\b/i,'controller']];
   const elements:FeatureElement[]=[];
-  const subjectPhrase=head.match(/^A method(?:\s*\([^)]+\))?[^\n:]*|\bthermal interface material\b|\b(?:cooling|thermal) apparatus\b|\bvapou?r chamber\b|\bheat pipe\b|\bthermal control method\b/i)?.[0]??head;
+  const subjectPhrase=head.match(/^A method(?:\s*\([^)]+\))?[^\n:]*|^An?\s+(?:electronic\s+)?device\b|\bthermal interface material\b|\b(?:cooling|thermal) apparatus\b|\bvapou?r chamber\b|\bheat pipe\b|\bthermal control method\b/i)?.[0]??head;
   elements.push({elementId:'E-001',elementName:subjectPhrase.toLowerCase(),elementType:'claimed_subject',originalText:subjectPhrase,evidence:evidence(doc,'claims',subjectPhrase),confidenceStatus:'rule_candidate'});
   for(const [name,re,type] of specs){const match=re.exec(claim);if(!match||elements.some(x=>x.elementName===name&&x.originalText.toLowerCase()===match[0].toLowerCase()))continue;elements.push({elementId:`E-${String(elements.length+1).padStart(3,'0')}`,elementName:name,elementType:type,originalText:match[0],evidence:evidence(doc,'claims',match[0]),confidenceStatus:'rule_candidate'});}
   const limitations=numericLimitations(doc,parts,elements);
@@ -97,6 +97,29 @@ export function extractRuleFeatures(doc:ThermalDocument):FeatureCandidate {
       [/second conductive layer \(3\) is located on a side that is of the first insulation layer \(2\) and that is close to the second cover \(20\)/i,'second conductive layer'],
       [/first conductive layer \(1\) is electrically connected, through the first conductive member \(51\), to a surface that is of the second cover \(20\) and that is away from the accommodating cavity \(101\)/i,'first conductive layer']
     ] as const){const match=claim.match(pattern);if(match)addLimit(match[0],'Structural Limitation',name);}
+  }
+  if(subjectType==='Apparatus'){
+    // Bounded structural vocabulary, with the original span retained for every candidate.
+    const nouns=['housing','support member','through hole','first plate portion','second plate portion','first flange portion','second flange portion','first plate','second plate','pillars','recess','wick','first cover','second cover','capillary structure','cooling medium','first conductive member','first conductive layer','first insulation layer','second conductive layer'];
+    for(const name of nouns){const match=claim.match(new RegExp(`\\b${name.replace(/ /g,'\\s+')}\\b(?:\\s*\\(\\d+\\))?`,'i'));if(match)addElement(name,match,'component');}
+    // A structural limitation may involve several components; keep the full expression and
+    // bind only the explicit grammatical subject. The other participant remains in source text.
+    const structuralPatterns:[RegExp,string|null][]=[
+      [/\b(?:support member|bracket)[^;\n]*?\b(?:includes?|comprises?)\s+(?:an?\s+)?(?:through\s+)?(?:hole|opening)\b[^;,\n]*/i,'support member'],
+      [/\b(?:vapor chamber|support member|plate|wick)\s+(?:is\s+)?disposed\s+through\s+(?:at least a portion of\s+)?(?:the|a)\s+(?:through\s+)?(?:hole|opening)/i,'vapor chamber'],
+      [/\b(?:first|second)\s+plate portion\s+(?:including|comprising)\s+(?:a plurality of|an?|the)\s+(?:pillars?|recess)/gi,null],
+      [/\b(?:at least one|an?|the)\s+wick\s+(?:is\s+)?disposed\s+in\s+(?:the|a)\s+recess/gi,'wick'],
+      [/\b(?:first|second)\s+flange portion(?:(?!\b(?:first|second)\s+flange portion\b)[^;,\n])*?\b(?:first|second)\s+width\s+(?:less|greater)\s+than\s+the\s+(?:first|second)\s+width/gi,null],
+      [/\b(?:first|second)\s+plate\s+and\s+the\s+(?:first|second)\s+plate\s+are\s+coupled[^;,\n]*?through\s+bonding[^;,\n]*/i,null],
+      [/\b(?:first|second)\s+flange portion[^;,\n]*?\bis\s+disposed\s+on\s+the\s+(?:first|second)\s+surface/i,null]
+    ];
+    for(const [pattern,name] of structuralPatterns)for(const match of claim.matchAll(new RegExp(pattern.source,pattern.flags.includes('g')?pattern.flags:pattern.flags+'g'))){const subject=name??nouns.filter(n=>match[0].toLowerCase().startsWith(n)).sort((a,b)=>b.length-a.length)[0];if(!limitations.some(x=>x.originalText===match[0]))addLimit(match[0],'Structural Limitation',subject??null);}
+    for(const [pattern,type] of [
+      [/\b(support member|bracket)\s+(?:is\s+)?disposed\s+in\s+(?:an?\s+)?internal space of the\s+(housing)/gi,'other'],
+      [/\b(vapor chamber|support member|wick)\s+(?:is\s+)?disposed\s+through\s+(?:at least a portion of\s+)?(?:the|a)\s+(through hole|opening)/gi,'other'],
+      [/\b(wick)\s+(?:is\s+)?disposed\s+in\s+(?:the|a)\s+(recess)/gi,'other'],
+      [/\b(first plate)\s+and\s+the\s+(second plate)\s+are\s+coupled\s+to\s+each\s+other\s+through\s+bonding/gi,'connected_to']
+    ] as const)for(const match of claim.matchAll(pattern)){if(!relationships.some(x=>x.originalText===match[0]))addRelation(match[0],type,match[1].toLowerCase(),match[2].toLowerCase());}
   }
   if(subjectType==='Method'){
     for(const part of parts){
