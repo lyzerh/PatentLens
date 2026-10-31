@@ -25,6 +25,7 @@ test('guided search keeps field/text distinctions and pins exact collection snap
     assert.equal(text.results.length,2);
     assert.equal(text.results[0].matchKind,'text_candidate_match');
     assert.ok(text.results[0].keyElements.some(x=>x.elementName));
+    assert.ok(text.results[0].totalElementCount>=text.results[0].keyElements.length);
     const fields=(await post('patent-repository/search',{query:{element:'plasticizer'}})).value;
     assert.equal(fields.results.length,2);
     assert.equal(fields.results[0].matchKind,'verified_field_match');
