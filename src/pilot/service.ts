@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { PilotStore, normalizePatent, parseImport, portfolio, type FactName, type PatentRecord } from "./records.ts";
+import { PilotStore, normalizePatent, parseImport, portfolio, CORRECTABLE_METADATA, type CorrectableMetadata, type FactName, type PatentRecord } from "./records.ts";
 import { DOMAINS, RULE_BASELINE_VERSION, ruleBaseline, taskId } from "./classification.ts";
 import { DEFAULT_MODEL, MODEL_CHOICES, PRICES, PilotBenchmark, preflight, summarizeBenchmark } from "./benchmark.ts";
 import { getPatent, searchPatents } from "../retrieval.js";
@@ -46,6 +46,30 @@ export function createPilotService({ path = resolve(process.env.PATENT_PILOT_DAT
           return { added, selected: collected.length, total: state.records.length, errors, sampleSetVersion: "epo-smart-terminal-v1", selectionRule: "EPO 英文标题/摘要检索：battery、inductive、thermal、display、communication；各取第一页最多前五条，按公开文献去重。检索日期由记录 importedAt 保留。检索词不是人工 Gold Set。" }; });
       }
       if (action === "dashboard") { const state = await store.read(); const filters = (body.filters ?? {}) as Record<string, string>; return portfolio(state.records, filters); }
+      if (action === "correct-metadata") {
+        const id=String(body.recordId??""), field=String(body.field??"") as CorrectableMetadata;
+        const editor=typeof body.editor==="string"?body.editor.trim():"",reason=typeof body.reason==="string"?body.reason.trim():"";
+        if(!CORRECTABLE_METADATA.includes(field)||!editor||editor.length>100||!reason||reason.length>1000)error("更正字段、修改人或原因无效");
+        if(!Number.isSafeInteger(body.expectedVersion)||Number(body.expectedVersion)<0)error("缺少有效的元数据版本");
+        return store.transaction(state=>{
+          const record=state.records.find(r=>r.id===id)??error("记录不存在");
+          const version=record.metadataVersion??0;if(version!==body.expectedVersion)error("元数据版本冲突，请刷新后重试");
+          const raw=body.value;
+          if(typeof raw!=="string"||!raw.trim()||raw.length>2000)error("更正值不能为空或过长");
+          const normalized=normalizePatent({publicationNumber:record.publicationNumber,[field]:raw});
+          const after=normalized[field];if(field==="jurisdiction"&&!/^[A-Z]{2}$/.test(String(after)))error("法域须为两位国家代码");
+          if(Array.isArray(after)&&(!after.length||after.some(x=>x.length>200)))error("分类或申请人列表无效");
+          if(after===null)error("更正值无效");
+          const before=structuredClone(record[field]);if(JSON.stringify(before)===JSON.stringify(after))error("新值与当前值相同");
+          const original=record.originalImportMetadata??Object.fromEntries(CORRECTABLE_METADATA.map(k=>[k,structuredClone(record[k])])) as PatentRecord["originalImportMetadata"];
+          const at=new Date().toISOString(),source=record.fields[field]?.sourceUrl??record.sourceUrl;
+          record.originalImportMetadata=original;record.metadataCorrections??=[];
+          record.metadataCorrections.push({revision:version+1,field,before,after:structuredClone(after),editor,reason,at,originalSourceUrl:source});
+          (record as unknown as Record<string,unknown>)[field]=after;record.metadataVersion=version+1;
+          record.fields[field]={status:"manually_reviewed",sourceUrl:source,observedAt:at,reviewedAt:at};
+          return {recordId:id,metadataVersion:record.metadataVersion,correction:record.metadataCorrections.at(-1)};
+        });
+      }
       if (action === "review-field") {
         const id = String(body.recordId ?? ""), field = String(body.field ?? "") as FactName;
         return store.transaction(state => { const record = state.records.find(r => r.id === id) ?? error("记录不存在"); const fact = record.fields[field] ?? error("此字段没有事实值，不能核验");

@@ -66,11 +66,26 @@ function renderDetail() {
   for (const key of fieldKeys) {
     const v = r[key], fact = r.fields[key], item = node("div", "", "fact");
     item.append(node("span", t('pilot.field.'+key)), node("strong", Array.isArray(v) ? (v.join("；") || t('common.notProvided')) : (v || t('common.notProvided'))), node("small", fact ? t('pilot.provenance.'+fact.status) + " · " + fact.observedAt.slice(0, 10) : t('pilot.noSource')));
+    if(r.metadataCorrections?.some(x=>x.field===key))item.append(node('small',t('pilot.metadataCorrected')));
     if (fact?.sourceUrl) { const a = node("a", t('pilot.fieldSource')); a.href = fact.sourceUrl; a.target = "_blank"; a.rel = "noopener noreferrer"; item.append(a); }
     if (fact && fact.status !== "manually_reviewed") { const b = node("button", t('pilot.verifyField'), "quiet"); b.onclick = () => task(t('pilot.reviewing'), async () => { await api("review-field", { recordId: r.id, field: key }); await refresh(); notice(t('pilot.reviewSaved')); }); item.append(b); }
     grid.append(item);
   }
   box.append(grid);
+  const editable=['title','assignees','priorityDate','filingDate','publicationDate','jurisdiction','cpc','ipc'];
+  const edit=document.createElement('details');edit.className='review-box';edit.append(node('summary',t('pilot.metadataEdit')));
+  const select=document.createElement('select');select.setAttribute('aria-label',t('pilot.metadataField'));for(const key of editable){const option=new Option(t('pilot.field.'+key),key);select.append(option);}
+  const value=document.createElement('input');value.setAttribute('aria-label',t('pilot.metadataValue'));value.maxLength=2000;
+  const editor=document.createElement('input');editor.setAttribute('aria-label',t('pilot.metadataEditor'));editor.placeholder=t('pilot.metadataEditor');editor.maxLength=100;
+  const reason=document.createElement('textarea');reason.setAttribute('aria-label',t('pilot.metadataReason'));reason.placeholder=t('pilot.metadataReason');reason.maxLength=1000;
+  const fill=()=>{const old=r[select.value];value.value=Array.isArray(old)?old.join('; '):old??'';};select.onchange=fill;fill();
+  const save=node('button',t('pilot.metadataSave'));save.type='button';save.onclick=()=>task(t('pilot.metadataSaving'),async()=>{if(!confirm(t('pilot.metadataConfirm')))return;await api('correct-metadata',{recordId:r.id,field:select.value,value:value.value,editor:editor.value,reason:reason.value,expectedVersion:r.metadataVersion??0});await refresh();notice(t('pilot.metadataSaved'));});
+  edit.append(node('p',t('pilot.metadataIdentityNotice')),select,value,editor,reason,save);box.append(edit);
+  const history=document.createElement('details');history.className='review-box';history.append(node('summary',t('pilot.metadataHistory',{count:r.metadataCorrections?.length??0})));
+  history.append(node('p',t('pilot.metadataVersion',{version:r.metadataVersion??0})));
+  for(const entry of r.metadataCorrections??[]){const line=node('div','', 'fact');line.append(node('strong',`#${entry.revision} · ${t('pilot.field.'+entry.field)} · ${entry.at}`),node('p',`${JSON.stringify(entry.before)} → ${JSON.stringify(entry.after)}`),node('small',`${t('pilot.metadataEditor')}: ${entry.editor} · ${t('pilot.metadataReason')}: ${entry.reason}`));if(entry.originalSourceUrl){const link=node('a',t('pilot.fieldSource'));link.href=entry.originalSourceUrl;link.target='_blank';link.rel='noopener noreferrer';line.append(link);}history.append(line);}
+  if(r.originalImportMetadata)history.append(node('p',t('pilot.metadataOriginal')+': '+JSON.stringify(r.originalImportMetadata)));
+  box.append(history);
   const baseline = state.ruleBaselines?.find(b => b.recordId === r.id);
   if (baseline) box.append(node("p", t('pilot.ruleBaseline',{version:baseline.version,label:baseline.label,reason:baseline.reason}), "hint"));
   const gold = state.gold[r.id];
