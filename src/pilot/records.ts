@@ -9,6 +9,8 @@ export type FieldSource = { status: Provenance; sourceUrl: string | null; observ
 export const CORRECTABLE_METADATA = ["title", "assignees", "priorityDate", "filingDate", "publicationDate", "jurisdiction", "cpc", "ipc"] as const;
 export type CorrectableMetadata = typeof CORRECTABLE_METADATA[number];
 export type MetadataCorrection = { revision: number; field: CorrectableMetadata; before: string | string[] | null; after: string | string[] | null; editor: string; reason: string; at: string; originalSourceUrl: string | null };
+export type ResearchSummary = { shortName: string; summary: string; suggestedTags: string[]; source: "manual" | "external_ai_suggestion" | "human_checked" };
+export type ResearchSummaryRevision = { revision: number; before: ResearchSummary | null; after: ResearchSummary; editor: string; reason: string; at: string };
 export interface PatentRecord {
   id: string; publicationNumber: string; title: string | null; abstract: string | null; assignees: string[]; inventors: string[];
   priorityDate: string | null; filingDate: string | null; publicationDate: string | null; jurisdiction: string | null;
@@ -17,6 +19,7 @@ export interface PatentRecord {
   fields: Record<FactName, FieldSource | null>;
   metadataVersion?: number; originalImportMetadata?: Record<CorrectableMetadata, string | string[] | null>; metadataCorrections?: MetadataCorrection[];
   manualTags?: string[]; manualTagVersion?: number; manualTagRevisions?: {version:number;before:string[];after:string[];editor:string;at:string}[];
+  researchSummary?: ResearchSummary; researchSummaryVersion?: number; researchSummaryRevisions?: ResearchSummaryRevision[];
   classification: null | { output: unknown; validationStatus: "needs_review" | "validated" | "rejected" | "insufficient_evidence"; reviewedAt: string | null; taskId: string };
 }
 export interface PilotState { version: 1; records: PatentRecord[]; runs: Record<string, unknown>[]; gold: Record<string, { label: string | "uncertain"; setVersion: string; reviewer: string; reviewedAt: string }>; pilotV3?: PilotV3State }

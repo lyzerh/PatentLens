@@ -24,6 +24,9 @@ test('synthetic registry patents support manual tags, exact two-source compariso
     const again=createPatentCollectionService({pilotPath:join(dir,'pilot.json'),datasetPath:join(dir,'missing-dataset.json'),storePath:join(dir,'collections.json'),repositoryStorePath:join(dir,'repository.json'),featureStorePath:join(dir,'features.json')});
     assert.equal((await again.get(c.collectionId)).manualRevisions.length,1);
     const exportData=await again.exportCollection(c.collectionId);assert.equal(exportData.json.featureSnapshots.length,0);assert.equal(exportData.json.manualEntries.length,2);assert.match(exportData.markdown,/a first plate and a support/);assert.match(exportData.markdown,/self-entered, unverified/);assert.equal(exportData.json.manualEntries[0].tags.length,1);
+    const aiCandidate=await again.saveManual(c.collectionId,{...payload,source:'external_ai_suggestion',difference:'Synthetic AI candidate; both exact quotations still require review.',expectedVersion:1});assert.equal(aiCandidate.manualRevisions[1].source,'external_ai_suggestion');
+    const aiExport=await again.exportCollection(c.collectionId);assert.match(aiExport.markdown,/external AI suggestion/);assert.equal(aiExport.json.manualComparison.source,'external_ai_suggestion');
+    await assert.rejects(again.saveManual(c.collectionId,{...payload,source:'verified_gold',expectedVersion:2}),/INVALID_MANUAL_RESEARCH/);
     const registry=await pilot.handle('state',{});assert.equal(registry.records[0].manualTagRevisions.length,2);assert.deepEqual(registry.records[0].independentClaims,docs[0].independentClaims);
     await pilot.handle('import',{format:'json',text:JSON.stringify(docs)});assert.deepEqual((await pilot.handle('state',{})).records[0].manualTags,['plate']);
   }finally{await rm(dir,{recursive:true,force:true});}

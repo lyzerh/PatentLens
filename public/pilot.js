@@ -41,7 +41,10 @@ function renderRegistry() {
     const row = node("div", "", "record" + (r.id === selectedId ? " active" : ""));
     const check = document.createElement("input"); check.type = "checkbox"; check.checked = checked.has(r.id); check.setAttribute("aria-label", t('pilot.selectForComparison',{patentId:r.publicationNumber}));
     check.onchange = () => { check.checked ? checked.add(r.id) : checked.delete(r.id); $("batch-status").textContent = t('pilot.selected',{count:checked.size}); };
-    const pick = node("button"); pick.type = "button"; pick.append(node("strong", r.title || t('pilot.titleMissing')), node("small", r.publicationNumber+' · '+(r.assignees?.join(', ')||t('common.notProvided'))),node("span",r.abstract||t('pilot.abstractMissing')),node("small",(r.manualTags?.length?r.manualTags.join(' · '):t('pilot.tagsMissing'))));
+    const pick = node("button"); pick.type = "button"; pick.append(node("strong", r.researchSummary?.shortName || r.title || t('pilot.titleMissing')));
+    if(r.researchSummary?.shortName)pick.append(node('small',t('pilot.researchFormalTitle',{title:r.title||t('pilot.titleMissing')})));
+    pick.append(node("small", r.publicationNumber+' · '+(r.assignees?.join(', ')||t('common.notProvided'))),node("span",r.researchSummary?.summary||r.abstract||t('pilot.abstractMissing')),node("small",(r.manualTags?.length?r.manualTags.join(' · '):t('pilot.tagsMissing'))));
+    if(r.researchSummary)pick.append(node('small',t('pilot.researchSource.'+r.researchSummary.source)+(r.researchSummary.suggestedTags.length?' · '+r.researchSummary.suggestedTags.join(' · '):'')));
     pick.append(trustBadge(t,'registered'),document.createTextNode(' '+(r.metadataCorrections?.length?t('pilot.metadataCorrected'):'')+' · '+r.sourceKind));
     pick.onclick = () => { selectedId = r.id; renderRegistry(); renderDetail(); $("detail").scrollIntoView({ behavior: "smooth" }); };
     row.append(check, pick); list.append(row);
@@ -69,6 +72,24 @@ function renderDetail() {
   box.append(trustBadge(t,'registered'),document.createTextNode(' '),trustBadge(t,r.metadataCorrections?.length?'corrected':'unchanged'));
   const research=node('a',t('pilot.openWorkspace'));research.href='/workspace?registry='+encodeURIComponent(r.id);box.append(research);
   box.append(node("p", t('pilot.coverage',{coverage:r.coverage,date:r.importedAt,source:r.sourceKind}), "hint"));
+  const summaryBox=document.createElement('section');summaryBox.className='review-box research-summary';summaryBox.append(node('h3',t('pilot.researchHeading')));
+  summaryBox.append(node('p',r.researchSummary?.shortName||t('pilot.researchMissing')));
+  if(r.researchSummary?.summary)summaryBox.append(node('p',r.researchSummary.summary));
+  if(r.researchSummary)summaryBox.append(node('small',t('pilot.researchSource.'+r.researchSummary.source)+(r.researchSummary.suggestedTags.length?' · '+r.researchSummary.suggestedTags.join(' · '):'')));
+  summaryBox.append(node('small',t('pilot.researchDisclaimer')));
+  const summaryEdit=document.createElement('details');summaryEdit.append(node('summary',t('pilot.researchEdit')));
+  const shortInput=document.createElement('input');shortInput.value=r.researchSummary?.shortName??'';shortInput.maxLength=40;shortInput.placeholder=t('pilot.researchShort');shortInput.setAttribute('aria-label',t('pilot.researchShort'));
+  const summaryInput=document.createElement('textarea');summaryInput.value=r.researchSummary?.summary??'';summaryInput.placeholder=t('pilot.researchText');summaryInput.setAttribute('aria-label',t('pilot.researchText'));
+  const count=node('small',t('pilot.researchCount',{count:[...summaryInput.value].length}));summaryInput.oninput=()=>{count.textContent=t('pilot.researchCount',{count:[...summaryInput.value].length});};
+  const suggestedInput=document.createElement('input');suggestedInput.value=(r.researchSummary?.suggestedTags??[]).join('; ');suggestedInput.placeholder=t('pilot.researchTags');suggestedInput.setAttribute('aria-label',t('pilot.researchTags'));
+  const sourceSelect=document.createElement('select');sourceSelect.setAttribute('aria-label',t('pilot.researchSourceLabel'));for(const source of ['manual','external_ai_suggestion','human_checked'])sourceSelect.append(new Option(t('pilot.researchSource.'+source),source));sourceSelect.value=r.researchSummary?.source??'manual';
+  const summaryEditor=document.createElement('input');summaryEditor.placeholder=t('pilot.metadataEditor');summaryEditor.setAttribute('aria-label',t('pilot.metadataEditor'));
+  const summaryReason=document.createElement('textarea');summaryReason.placeholder=t('pilot.metadataReason');summaryReason.setAttribute('aria-label',t('pilot.metadataReason'));
+  const summarySave=node('button',t('pilot.researchSave'));summarySave.type='button';summarySave.onclick=()=>task(t('pilot.metadataSaving'),async()=>{await api('set-research-summary',{recordId:r.id,shortName:shortInput.value,summary:summaryInput.value,suggestedTags:suggestedInput.value.split(';').map(x=>x.trim()).filter(Boolean),source:sourceSelect.value,editor:summaryEditor.value,reason:summaryReason.value,expectedVersion:r.researchSummaryVersion??0});await refresh();notice(t('pilot.researchSaved'));});
+  summaryEdit.append(shortInput,summaryInput,count,suggestedInput,sourceSelect,summaryEditor,summaryReason,summarySave);summaryBox.append(summaryEdit);
+  const summaryHistory=document.createElement('details');summaryHistory.append(node('summary',t('pilot.researchHistory',{count:r.researchSummaryRevisions?.length??0})));
+  for(const entry of r.researchSummaryRevisions??[])summaryHistory.append(node('p',`#${entry.revision} · ${entry.at} · ${entry.editor} · ${entry.reason}\n${JSON.stringify(entry.before)} → ${JSON.stringify(entry.after)}`));
+  summaryBox.append(summaryHistory);box.append(summaryBox);
   if (r.sourceUrl) { const a = node("a", t('pilot.sourceLink')); a.href = r.sourceUrl; a.target = "_blank"; a.rel = "noopener noreferrer"; box.append(a); }
   const grid = node("div", "", "fact-grid");
   for (const key of fieldKeys) {

@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { PilotStore, normalizePatent, parseImport, portfolio, CORRECTABLE_METADATA, type CorrectableMetadata, type FactName, type PatentRecord } from "./records.ts";
+import { PilotStore, normalizePatent, parseImport, portfolio, CORRECTABLE_METADATA, type CorrectableMetadata, type FactName, type PatentRecord, type ResearchSummary } from "./records.ts";
 import { DOMAINS, RULE_BASELINE_VERSION, ruleBaseline, taskId } from "./classification.ts";
 import { DEFAULT_MODEL, MODEL_CHOICES, PRICES, PilotBenchmark, preflight, summarizeBenchmark } from "./benchmark.ts";
 import { getPatent, searchPatents } from "../retrieval.js";
@@ -50,6 +50,21 @@ export function createPilotService({ path = resolve(process.env.PATENT_PILOT_DAT
         const tags=body.tags,editor=typeof body.editor==='string'?body.editor.trim():'';
         if(!Array.isArray(tags)||tags.length>20||tags.some(x=>typeof x!=='string'||!x.trim()||x.length>60)||new Set(tags.map(x=>x.trim().toLowerCase())).size!==tags.length||!editor||editor.length>100||!Number.isSafeInteger(body.expectedVersion))error('人工标签、修改人或版本无效');
         return store.transaction(state=>{const r=state.records.find(x=>x.id===body.recordId)??error('记录不存在');const version=r.manualTagVersion??0;if(version!==body.expectedVersion)error('人工标签版本冲突');const after=(tags as string[]).map(x=>x.trim()),before=r.manualTags??[];if(JSON.stringify(before)===JSON.stringify(after))error('标签没有变化');r.manualTags=after;r.manualTagVersion=version+1;r.manualTagRevisions??=[];r.manualTagRevisions.push({version:version+1,before:[...before],after:[...after],editor,at:new Date().toISOString()});return {recordId:r.id,version:r.manualTagVersion,tags:r.manualTags};});
+      }
+      if (action === "set-research-summary") {
+        const shortName=typeof body.shortName==="string"?body.shortName.trim():"";
+        const summary=typeof body.summary==="string"?body.summary.trim():"";
+        const tags=body.suggestedTags;
+        const source=body.source;
+        const editor=typeof body.editor==="string"?body.editor.trim():"";
+        const reason=typeof body.reason==="string"?body.reason.trim():"";
+        const length=(value:string)=>[...value].length;
+        if(length(shortName)>20||length(summary)>80)error("技术短标题最多20字，简介最多80字；请编辑后保存，不会自动截断");
+        if(!shortName&&!summary&&(!Array.isArray(tags)||!tags.length))error("请填写至少一项研究辅助内容");
+        if(!Array.isArray(tags)||tags.length>5||tags.some(x=>typeof x!=="string"||!x.trim()||length(x.trim())>60)||new Set(tags.map(x=>String(x).trim().toLowerCase())).size!==tags.length)error("建议标签须为最多5个不重复的短标签");
+        if(!["manual","external_ai_suggestion","human_checked"].includes(String(source))||!editor||length(editor)>100||!reason||length(reason)>1000||!Number.isSafeInteger(body.expectedVersion)||Number(body.expectedVersion)<0)error("来源、修改人、原因或版本无效");
+        const after:ResearchSummary={shortName,summary,suggestedTags:(tags as string[]).map(x=>x.trim()),source:source as ResearchSummary["source"]};
+        return store.transaction(state=>{const record=state.records.find(x=>x.id===body.recordId)??error("记录不存在");const version=record.researchSummaryVersion??0;if(version!==body.expectedVersion)error("研究简介版本冲突，请刷新后重试");const before=record.researchSummary?structuredClone(record.researchSummary):null;if(JSON.stringify(before)===JSON.stringify(after))error("研究简介没有变化");const revision=version+1;record.researchSummary=after;record.researchSummaryVersion=revision;record.researchSummaryRevisions??=[];record.researchSummaryRevisions.push({revision,before,after:structuredClone(after),editor,reason,at:new Date().toISOString()});return {recordId:record.id,version,researchSummary:after};});
       }
       if (action === "correct-metadata") {
         const id=String(body.recordId??""), field=String(body.field??"") as CorrectableMetadata;
