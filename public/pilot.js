@@ -33,7 +33,11 @@ async function refresh() {
 function renderRegistry() {
   const list = $("registry-list"); list.replaceChildren();
   if (!state.records.length) { list.append(node("p", t('pilot.emptyRegistry'), "empty")); return; }
-  for (const r of state.records) {
+  const normalized=value=>String(value??'').replace(/[\s\-‐‑–—]/g,'').toUpperCase();
+  const query=normalized($("registry-search").value),matches=state.records.filter(r=>normalized(r.publicationNumber).includes(query));
+  $("registry-match-count").textContent=t('pilot.registryMatches',{count:matches.length});
+  if(!matches.length){list.append(node('p',t('pilot.registryNoMatches'),'empty'));return;}
+  for (const r of matches) {
     const row = node("div", "", "record" + (r.id === selectedId ? " active" : ""));
     const check = document.createElement("input"); check.type = "checkbox"; check.checked = checked.has(r.id); check.setAttribute("aria-label", t('pilot.selectForComparison',{patentId:r.publicationNumber}));
     check.onchange = () => { check.checked ? checked.add(r.id) : checked.delete(r.id); $("batch-status").textContent = t('pilot.selected',{count:checked.size}); };
@@ -160,6 +164,7 @@ $("import-button").onclick = () => task(t('pilot.readingImport'), async () => { 
 $("epo-import").onclick = () => task(t('pilot.readingEpo'), async () => { const result = await api("import-source", { source: "epo", publicationNumber: $("epo-id").value.trim() }); await refresh(); selectedId = result.recordId; renderRegistry(); renderDetail(); notice(t(result.duplicate?'pilot.sourceDuplicate':'pilot.sourceAdded')); });
 $("collect-sample").onclick = () => task(t('pilot.collecting'), async () => { const result = await api("collect-sample"); await refresh(); notice(t('pilot.sampleAdded',{added:result.added,errors:result.errors.length,advice:result.errors.length?t('pilot.sampleAdvice'):''}),result.errors.length > 0); });
 $("select-all").onclick = () => { checked = new Set(state.records.map(r => r.id)); renderRegistry(); $("batch-status").textContent = t('pilot.selected',{count:checked.size}); };
+$("registry-search").addEventListener('input',renderRegistry);
 $("apply-filters").onclick = () => task(t('pilot.updatingStats'), async () => { await refreshDashboard(); notice(t('pilot.filtersUpdated')); });
 $("estimate").onclick = () => task(t('pilot.estimating'), async () => { if (!current()) throw new Error(t('pilot.chooseFirst')); const result = await api("estimate", runOptions(false)); $("estimate-output").textContent = t('pilot.estimated',{input:result.inputTokensEstimate,output:result.outputTokensLimit,cost:money(result.estimatedMaxUsd),version:result.priceVersion}); notice(t('pilot.estimateDone')); });
 function renderLastRun(){if(!lastRun)return;const run=lastRun,box=$("classification-output");box.replaceChildren(node("p",t('pilot.runStatus',{model:run.model,mode:run.mode,status:run.status,cache:run.cached?t('pilot.cached'):'',cost:money(run.apiCostUsd),kind:run.costKind,latency:run.latencyMs})));if(run.errorType)box.append(node('div',t('pilot.runError',{error:run.errorType}),'issue'));box.append(classificationCard(run.output,run.validation,current()));}

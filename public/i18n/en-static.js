@@ -1,4 +1,5 @@
 export default {
+  'pilot.registrySearch':'Find publication number','pilot.registrySearchPlaceholder':'Full or partial publication number','pilot.registryMatches':'{count} matches','pilot.registryNoMatches':'No matching registry records. Clear the search to see all.',
   "thermal.static.1": "PatentLens · Smart Device Thermal Management",
   "thermal.static.2": "← Earlier Experiments",
   "thermal.static.3": "PATENTLENS / THERMAL",

@@ -1,4 +1,5 @@
 export default {
+  'pilot.registrySearch':'公开号快速检索','pilot.registrySearchPlaceholder':'输入全部或部分公开号','pilot.registryMatches':'匹配 {count} 条','pilot.registryNoMatches':'没有匹配的登记记录；清空搜索可查看全部。',
   "thermal.static.1": "PatentLens · 智能终端热管理",
   "thermal.static.2": "← 历史实验",
   "thermal.static.3": "PATENTLENS / THERMAL",
