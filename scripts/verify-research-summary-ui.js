@@ -44,9 +44,14 @@ try{
   await page.goto(base+'/patent-compare');await page.locator('#manual-research').waitFor();
   await page.locator('#manual-project-title').fill('Synthetic comparison project');await page.getByRole('button',{name:'Create / 新建'}).click();
   await page.locator('#manual-difference').fill('External AI candidate: check the structural difference.');
-  await page.locator('#manual-claimA').fill('two plates');await page.locator('#manual-claimB').fill('a support and an opening');
+  await page.locator('#manual-claimA').fill('invented quote');await page.locator('#manual-claimB').fill('a support and an opening');
   await page.locator('#manual-editor').fill('Synthetic editor');await page.locator('#manual-source').selectOption('external_ai_suggestion');
   await page.locator('#manual-research').getByRole('button',{name:'保存人工研究'}).click();
+  await page.getByText(/A 侧引文与 Claim 1 不完全一致/).waitFor();
+  const collectionId=await page.locator('#manual-collection-list').inputValue();
+  const afterFailure=await page.evaluate(async id=>{const token=(await(await fetch('/api/xai/settings/csrf')).json()).csrfToken;return (await(await fetch('/api/patent-collections/load',{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':token},body:JSON.stringify({collectionId:id})})).json())},collectionId);
+  assert.equal(afterFailure.manualEntries?.length??0,0);assert.equal(afterFailure.manualRevisions?.length??0,0);
+  await page.locator('#manual-claimA').fill('two plates');await page.locator('#manual-research').getByRole('button',{name:'保存人工研究'}).click();
   await page.waitForFunction(()=>document.querySelector('#manual-research')?.textContent?.includes('版本 1'));
   await page.reload();await page.locator('#manual-research').waitFor();
   assert.equal(await page.locator('#manual-source').inputValue(),'external_ai_suggestion');

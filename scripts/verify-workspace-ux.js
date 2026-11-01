@@ -44,10 +44,19 @@ try{
   await page.locator('#documents input[value="EP9000002A1"]').check();
   await page.locator('#preview').click();await page.locator('#run').click();
   await page.locator('#results .row').filter({hasText:'EP9000002A1'}).waitFor();
-  await page.goto(base+'/');await page.locator('.paths a[href="/patent-repository?task=search"]').click();
+  await page.goto(base+'/patent-features?patent=EP9000003A1');await page.locator('#patent').selectOption('EP9000003A1');
+  await page.locator('#extract').click();await page.getByText(/候选|Candidate/).first().waitFor();
+  await page.locator('.workspace-steps a[href="#create"]').click();assert.equal(await page.locator('#create').isEnabled(),true);
+  await page.locator('#create').click();await page.waitForFunction(()=>document.querySelector('#create')?.disabled);
+  await page.locator('.workspace-steps a[href="#coverage-review"]').click();assert.equal(await page.locator('#technical-checks').evaluate(node=>node.open),true);
+  await page.goto(base+'/');await page.locator('.paths a[href="/patent-repository?task=search"]').click();await page.locator('#results .row').first().waitFor();
   await page.locator('#query-text').fill('plasticizer');await page.locator('#search').click();await page.waitForFunction(()=>document.querySelector('#results')?.textContent?.includes('文本候选命中'));
   await page.locator('#query-text').fill('');await page.locator('.advanced-filters').evaluate(node=>node.open=true);await page.locator('#query-element').fill('plasticizer');await page.locator('#search').click();await page.waitForFunction(()=>document.querySelector('#results')?.textContent?.includes('结构化字段命中'));
+  await page.locator('#results .row').filter({hasText:'EP9000001A1'}).getByRole('button',{name:/原文证据|Evidence/}).click();assert.match(await page.locator('#evidence').innerText(),/EP9000001A1/);
   await page.locator('#results .row').filter({hasText:'EP9000001A1'}).getByRole('button',{name:/设为 A|Choose A/}).click();
+  assert.equal(await page.locator('#results .row').filter({hasText:'EP9000001A1'}).locator('[data-side="a"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#results .row').filter({hasText:'EP9000001A1'}).locator('[data-side="a"]').click();assert.equal(await page.locator('#compare').isEnabled(),false);
+  await page.locator('#results .row').filter({hasText:'EP9000001A1'}).locator('[data-side="a"]').click();
   await page.locator('#results .row').filter({hasText:'EP9000002A1'}).getByRole('button',{name:/设为 B|Choose B/}).click();
   assert.equal(await page.locator('#compare').isEnabled(),true);
   await page.locator('#compare').click();await page.waitForURL(/\/patent-compare\?/);
@@ -55,7 +64,7 @@ try{
   await page.locator('#side-a').getByText(/EP9000001A1/).first().waitFor({timeout:10000});
   assert.match(await page.locator('#side-a').innerText(),/EP9000001A1/);
   assert.match(await page.locator('#side-b').innerText(),/EP9000002A1/);
-  await page.locator('.language-switcher button[data-lang="en"]').click();assert.match(await page.locator('h1').innerText(),/Two-patent technical feature comparison/);
+  await page.locator('.language-switcher button[data-lang="en"]').click();assert.match(await page.locator('h1').innerText(),/Two-patent technical (feature comparison|study)/);
   await page.locator('.language-switcher button[data-lang="zh-CN"]').click();
   for(const width of [768,390]){await page.setViewportSize({width,height:850});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`comparison overflow at ${width}`);}
   await page.setViewportSize({width:1440,height:900});

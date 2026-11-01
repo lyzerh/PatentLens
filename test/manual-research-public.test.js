@@ -16,6 +16,13 @@ test('synthetic registry patents support manual tags, exact two-source compariso
     await pilot.handle('set-manual-tags',{recordId:a,tags:['plate'],editor:'Synthetic editor',expectedVersion:1});
     await assert.rejects(pilot.handle('set-manual-tags',{recordId:a,tags:['stale'],editor:'Synthetic editor',expectedVersion:0}),/版本冲突/);
     const c=await collections.create('Synthetic manual project','No extraction');assert.equal(c.sourceDatasetId,'registry-only');
+    const atomic=await collections.create('Synthetic atomic project','No extraction');
+    const atomicPayload={pair:[a,b],editor:'Synthetic editor',notes:'',difference:'Synthetic difference',evidence:[{recordId:a,section:'claims',sourceSpan:'invented quote'},{recordId:b,section:'claims',sourceSpan:'a second plate'}],expectedVersion:0};
+    await assert.rejects(collections.saveManual(atomic.collectionId,atomicPayload),/MANUAL_EVIDENCE_NOT_EXACT:A/);
+    assert.equal((await collections.get(atomic.collectionId)).manualEntries?.length??0,0);
+    assert.equal((await collections.get(atomic.collectionId)).manualRevisions?.length??0,0);
+    const atomicSaved=await collections.saveManual(atomic.collectionId,{...atomicPayload,evidence:[{...atomicPayload.evidence[0],sourceSpan:'a first plate'},atomicPayload.evidence[1]]});
+    assert.equal(atomicSaved.manualEntries.length,2);assert.equal(atomicSaved.manualRevisions.length,1);
     await collections.addManual(c.collectionId,a);await collections.addManual(c.collectionId,a);await collections.addManual(c.collectionId,b);
     const payload={pair:[a,b],editor:'Synthetic editor',notes:'Check the plate structures.',difference:'A specifies a support; B specifies an opening.',evidence:[{recordId:a,section:'claims',sourceSpan:'a first plate and a support'},{recordId:b,section:'claims',sourceSpan:'a second plate and an opening'}],expectedVersion:0};
     await assert.rejects(collections.saveManual(c.collectionId,{...payload,evidence:[{...payload.evidence[0],sourceSpan:'invented quote'},payload.evidence[1]]}),/MANUAL_EVIDENCE_NOT_EXACT/);
