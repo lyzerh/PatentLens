@@ -23,6 +23,7 @@ const files = [
   "test/portfolio-demo-public.test.js",
   "test/patent-repository-audit-public.test.js",
   "test/feature-llm-public.test.js",
+  "test/capability-gate-public.test.js",
   "test/thermal-smoke-ui.test.js",
   "test/ui-lab.test.js",
   "test/workbench.test.js",
