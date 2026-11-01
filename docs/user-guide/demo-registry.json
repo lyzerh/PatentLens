@@ -1,0 +1,26 @@
+[
+  {
+    "publicationNumber": "EP9000001A1",
+    "title": "Synthetic mock thermal interface material A",
+    "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+    "independentClaims": [
+      "A thermal interface material, comprising: a non-silicone resin comprising a phase change material; a plasticizer present at between 25 and 50 percent by weight of the non-silicone resin; and a thermally conductive particulate filler having a particle size of less than 25 µm."
+    ]
+  },
+  {
+    "publicationNumber": "EP9000002A1",
+    "title": "Synthetic mock thermal interface material B",
+    "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+    "independentClaims": [
+      "A thermal interface material, comprising: a non-silicone resin comprising a phase change material; a plasticizer present at between 30 and 55 percent by weight of the total composition; and a thermally conductive particulate filler having a particle size of less than 20 µm."
+    ]
+  },
+  {
+    "publicationNumber": "EP9000003A1",
+    "title": "Synthetic mock cooling apparatus A",
+    "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000003NWA1/document.xml",
+    "independentClaims": [
+      "A cooling apparatus comprising: a vapor chamber thermally coupled to a heat pipe; a cooling fan; a temperature sensor connected to a controller."
+    ]
+  }
+]

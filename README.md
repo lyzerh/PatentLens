@@ -8,6 +8,8 @@
 
 PatentLens 是面向智能终端产业的本机研究原型：将专利 Claim 1 解析为可追溯的技术要素，供知识产权与研发人员检索、比较和整理研究集合。它展示可复核的工程流程，不提供法律结论。
 
+**[用户使用指南：图文完成登记、人工比较与导出](docs/user-guide/README.md)**
+
 ### 五分钟无 Key 演示
 
 需要 **Node.js 24+** 和 npm。在仓库根目录运行：
@@ -64,6 +66,8 @@ npm run test:local
 ## English
 
 PatentLens is a local research prototype for smart-device patent work. It turns Claim 1 into traceable technical features so IP and engineering teams can search, compare, and collect candidate solutions. It demonstrates a reviewable workflow and does not give legal conclusions.
+
+**[Illustrated user guide (Chinese)](docs/user-guide/README.md)**
 
 ### Five-minute demo without an API key
 
