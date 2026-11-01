@@ -41,7 +41,8 @@ function renderRegistry() {
     const row = node("div", "", "record" + (r.id === selectedId ? " active" : ""));
     const check = document.createElement("input"); check.type = "checkbox"; check.checked = checked.has(r.id); check.setAttribute("aria-label", t('pilot.selectForComparison',{patentId:r.publicationNumber}));
     check.onchange = () => { check.checked ? checked.add(r.id) : checked.delete(r.id); $("batch-status").textContent = t('pilot.selected',{count:checked.size}); };
-    const pick = node("button"); pick.type = "button"; pick.append(node("strong", r.publicationNumber), node("span", r.title || t('pilot.titleMissing')), node("small", [r.jurisdiction || t('pilot.jurisdictionUnknown'), r.sourceKind, r.classification?.validationStatus || t('pilot.unclassified')].join(" · ")));
+    const pick = node("button"); pick.type = "button"; pick.append(node("strong", r.title || t('pilot.titleMissing')), node("small", r.publicationNumber+' · '+(r.assignees?.join(', ')||t('common.notProvided'))),node("span",r.abstract||t('pilot.abstractMissing')),node("small",(r.manualTags?.length?r.manualTags.join(' · '):t('pilot.tagsMissing'))));
+    pick.append(trustBadge(t,'registered'),document.createTextNode(' '+(r.metadataCorrections?.length?t('pilot.metadataCorrected'):'')+' · '+r.sourceKind));
     pick.onclick = () => { selectedId = r.id; renderRegistry(); renderDetail(); $("detail").scrollIntoView({ behavior: "smooth" }); };
     row.append(check, pick); list.append(row);
   }
@@ -99,6 +100,7 @@ function renderDetail() {
   const tagSave=node('button',t('manual.saveTags'));tagSave.type='button';tagSave.onclick=()=>task(t('manual.saving'),async()=>{await api('set-manual-tags',{recordId:r.id,tags:tagValue.value.split(';').map(x=>x.trim()).filter(Boolean),editor:tagEditor.value,expectedVersion:r.manualTagVersion??0});await refresh();notice(t('manual.saved'));});
   tags.append(node('p',t('manual.selfEntered')),tagValue,tagEditor,tagSave,node('small',t('manual.tagHistory',{count:r.manualTagRevisions?.length??0})));box.append(tags);
   const manualLink=node('a',t('manual.openProject'));manualLink.href='/patent-repository?task=collections&registry='+encodeURIComponent(r.id);box.append(manualLink);
+  const compareLink=node('a',t('pilot.manualCompare'),'workspace-next');compareLink.href='/patent-compare?registry='+encodeURIComponent(r.id);box.append(compareLink);
   const baseline = state.ruleBaselines?.find(b => b.recordId === r.id);
   if (baseline) box.append(node("p", t('pilot.ruleBaseline',{version:baseline.version,label:baseline.label,reason:baseline.reason}), "hint"));
   const gold = state.gold[r.id];

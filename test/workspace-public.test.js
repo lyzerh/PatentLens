@@ -12,7 +12,7 @@ test('workspace and legacy routes remain reachable',async()=>{
   try{
     const home=await(await fetch(root+'/')).text();
     assert.match(home,/专利技术研究工作台/);
-    for(const path of ['/workspace','/patent-search','/pilot','/pilot-v3','/pilot-thermal','/patent-features','/patent-repository','/patent-compare','/workspace.js','/workspace-nav.js','/i18n/workspace.js']){
+    for(const path of ['/workspace','/patent-search','/pilot','/pilot-v3','/pilot-thermal','/patent-features','/patent-repository','/patent-compare','/workspace.js','/workspace-nav.js','/i18n/workspace.js','/i18n/enterprise-ux.js','/enterprise-ux.css']){
       const response=await fetch(root+path);
       assert.equal(response.status,200,path);
     }
@@ -20,6 +20,7 @@ test('workspace and legacy routes remain reachable',async()=>{
     assert.match(legacy,/research-main/);
   }finally{app.closeAllConnections();await new Promise(resolve=>app.close(resolve));}
 });
+
 
 test('four task paths and bilingual labels have distinct destinations',async()=>{
   const html=await readFile(new URL('../public/workspace.html',import.meta.url),'utf8');

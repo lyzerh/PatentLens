@@ -28,6 +28,8 @@ for (const [route,file,type] of [["/patent-repository","patent-repository.html",
 staticFiles.set('/registry-context.js',['registry-context.js','text/javascript; charset=utf-8']);
 staticFiles.set('/manual-research.js',['manual-research.js','text/javascript; charset=utf-8']);
 staticFiles.set('/trust-status.js',['trust-status.js','text/javascript; charset=utf-8']);
+staticFiles.set('/enterprise-ux.css',['enterprise-ux.css','text/css; charset=utf-8']);
+staticFiles.set('/i18n/enterprise-ux.js',['i18n/enterprise-ux.js','text/javascript; charset=utf-8']);
 for (const file of ["ui-lab.js", "ui-metrics.js"]) staticFiles.set("/" + file, [file, "text/javascript; charset=utf-8"]);
 for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js", "repository.js", "workspace.js", "guided.js", "registry.js", "status.js", "manual.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
 staticFiles.set("/i18n/i18n.css",["i18n/i18n.css","text/css; charset=utf-8"]);
