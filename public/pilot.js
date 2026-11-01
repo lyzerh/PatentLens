@@ -89,6 +89,12 @@ function renderDetail() {
   for(const entry of r.metadataCorrections??[]){const line=node('div','', 'fact');line.append(node('strong',`#${entry.revision} · ${t('pilot.field.'+entry.field)} · ${entry.at}`),node('p',`${JSON.stringify(entry.before)} → ${JSON.stringify(entry.after)}`),node('small',`${t('pilot.metadataEditor')}: ${entry.editor} · ${t('pilot.metadataReason')}: ${entry.reason}`));if(entry.originalSourceUrl){const link=node('a',t('pilot.fieldSource'));link.href=entry.originalSourceUrl;link.target='_blank';link.rel='noopener noreferrer';line.append(link);}history.append(line);}
   if(r.originalImportMetadata)history.append(node('p',t('pilot.metadataOriginal')+': '+JSON.stringify(r.originalImportMetadata)));
   box.append(history);
+  const tags=document.createElement('details');tags.className='review-box';tags.append(node('summary',t('manual.tags')));
+  const tagValue=document.createElement('input');tagValue.value=(r.manualTags??[]).join('; ');tagValue.setAttribute('aria-label',t('manual.tags'));
+  const tagEditor=document.createElement('input');tagEditor.placeholder=t('manual.editor');tagEditor.setAttribute('aria-label',t('manual.editor'));
+  const tagSave=node('button',t('manual.saveTags'));tagSave.type='button';tagSave.onclick=()=>task(t('manual.saving'),async()=>{await api('set-manual-tags',{recordId:r.id,tags:tagValue.value.split(';').map(x=>x.trim()).filter(Boolean),editor:tagEditor.value,expectedVersion:r.manualTagVersion??0});await refresh();notice(t('manual.saved'));});
+  tags.append(node('p',t('manual.selfEntered')),tagValue,tagEditor,tagSave,node('small',t('manual.tagHistory',{count:r.manualTagRevisions?.length??0})));box.append(tags);
+  const manualLink=node('a',t('manual.openProject'));manualLink.href='/patent-repository?task=collections&registry='+encodeURIComponent(r.id);box.append(manualLink);
   const baseline = state.ruleBaselines?.find(b => b.recordId === r.id);
   if (baseline) box.append(node("p", t('pilot.ruleBaseline',{version:baseline.version,label:baseline.label,reason:baseline.reason}), "hint"));
   const gold = state.gold[r.id];

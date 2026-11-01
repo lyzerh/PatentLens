@@ -26,9 +26,10 @@ for (const [route,file,type] of [["/patent-features","patent-features.html","tex
 for (const [route,file,type] of [["/patent-compare","patent-compare.html","text/html; charset=utf-8"],["/patent-compare.js","patent-compare.js","text/javascript; charset=utf-8"],["/patent-compare.css","patent-compare.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const [route,file,type] of [["/patent-repository","patent-repository.html","text/html; charset=utf-8"],["/patent-repository.js","patent-repository.js","text/javascript; charset=utf-8"],["/patent-repository.css","patent-repository.css","text/css; charset=utf-8"],["/patent-repository-audit.js","patent-repository-audit.js","text/javascript; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 staticFiles.set('/registry-context.js',['registry-context.js','text/javascript; charset=utf-8']);
+staticFiles.set('/manual-research.js',['manual-research.js','text/javascript; charset=utf-8']);
 staticFiles.set('/trust-status.js',['trust-status.js','text/javascript; charset=utf-8']);
 for (const file of ["ui-lab.js", "ui-metrics.js"]) staticFiles.set("/" + file, [file, "text/javascript; charset=utf-8"]);
-for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js", "repository.js", "workspace.js", "guided.js", "registry.js", "status.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
+for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js", "repository.js", "workspace.js", "guided.js", "registry.js", "status.js", "manual.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
 staticFiles.set("/i18n/i18n.css",["i18n/i18n.css","text/css; charset=utf-8"]);
 function send(res, status, value) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -59,7 +60,7 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
   const features = createPatentFeatureService({datasetPath:thermalDatasetPath,storePath:featureStorePath});
   const comparisons = createPatentComparisonService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:comparisonStorePath});
   const repository = createPatentRepositoryService({datasetPath:thermalDatasetPath,featureStorePath,storePath:repositoryStorePath});
-  const collections = createPatentCollectionService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:collectionStorePath});
+  const collections = createPatentCollectionService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:collectionStorePath,pilotPath});
   const featureLlm = createFeatureLlmService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:featureLlmStorePath,provider:featureLlmProvider,fetchImpl,getKey:keySession.getKey});
   return http.createServer(async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -164,6 +165,8 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
           if(pathname==="/api/patent-collections/load")return send(res,200,await collections.get(value.collectionId));
           if(pathname==="/api/patent-collections/edit")return send(res,200,await collections.edit(value.collectionId,value.title,value.description,value.optionalNotes));
           if(pathname==="/api/patent-collections/add")return send(res,200,await collections.add(value.collectionId,value.extractionRecordId,value.revisionId));
+          if(pathname==="/api/patent-collections/add-manual")return send(res,200,await collections.addManual(value.collectionId,value.recordId));
+          if(pathname==="/api/patent-collections/save-manual")return send(res,200,await collections.saveManual(value.collectionId,value));
           if(pathname==="/api/patent-collections/remove")return send(res,200,await collections.remove(value.collectionId,value.publicationNumber));
           if(pathname==="/api/patent-collections/export")return send(res,200,await collections.exportCollection(value.collectionId));
           throw new AppError("NOT_FOUND","接口不存在。",404);

@@ -1,11 +1,13 @@
 import {t,onLanguageChange} from './i18n/index.js';
 import {mountWorkspaceNavigation} from './workspace-nav.js';
 import {trustBadge,featureTrust} from './trust-status.js';
+import {mountManualResearch} from './manual-research.js';
 const $=id=>document.getElementById(id);
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n;};
 let csrf,items=[],availableRecords=[],comparison=null,record=null,edited=[],sources={a:null,b:null};
 const params=new URLSearchParams(location.search);let pinned=null;
 const msg=text=>{$('message').textContent=text;};
+mountManualResearch($('message')).catch(error=>msg(t('manual.error',{reason:error.message})));
 async function api(action,body={}){const response=await fetch('/api/patent-compare/'+action,{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':csrf},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error?.message??'REQUEST_FAILED');return value;}
 const guarded=fn=>async()=>{try{await fn();}catch(error){msg(t('compare.error',{reason:error.message}));}};
 const pair=()=>({patentA:$('patent-a').value,patentB:$('patent-b').value,...(pinned?{refA:pinned.a,refB:pinned.b}:{})});

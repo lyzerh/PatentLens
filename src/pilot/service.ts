@@ -46,6 +46,11 @@ export function createPilotService({ path = resolve(process.env.PATENT_PILOT_DAT
           return { added, selected: collected.length, total: state.records.length, errors, sampleSetVersion: "epo-smart-terminal-v1", selectionRule: "EPO 英文标题/摘要检索：battery、inductive、thermal、display、communication；各取第一页最多前五条，按公开文献去重。检索日期由记录 importedAt 保留。检索词不是人工 Gold Set。" }; });
       }
       if (action === "dashboard") { const state = await store.read(); const filters = (body.filters ?? {}) as Record<string, string>; return portfolio(state.records, filters); }
+      if (action === "set-manual-tags") {
+        const tags=body.tags,editor=typeof body.editor==='string'?body.editor.trim():'';
+        if(!Array.isArray(tags)||tags.length>20||tags.some(x=>typeof x!=='string'||!x.trim()||x.length>60)||new Set(tags.map(x=>x.trim().toLowerCase())).size!==tags.length||!editor||editor.length>100||!Number.isSafeInteger(body.expectedVersion))error('人工标签、修改人或版本无效');
+        return store.transaction(state=>{const r=state.records.find(x=>x.id===body.recordId)??error('记录不存在');const version=r.manualTagVersion??0;if(version!==body.expectedVersion)error('人工标签版本冲突');const after=(tags as string[]).map(x=>x.trim()),before=r.manualTags??[];if(JSON.stringify(before)===JSON.stringify(after))error('标签没有变化');r.manualTags=after;r.manualTagVersion=version+1;r.manualTagRevisions??=[];r.manualTagRevisions.push({version:version+1,before:[...before],after:[...after],editor,at:new Date().toISOString()});return {recordId:r.id,version:r.manualTagVersion,tags:r.manualTags};});
+      }
       if (action === "correct-metadata") {
         const id=String(body.recordId??""), field=String(body.field??"") as CorrectableMetadata;
         const editor=typeof body.editor==="string"?body.editor.trim():"",reason=typeof body.reason==="string"?body.reason.trim():"";

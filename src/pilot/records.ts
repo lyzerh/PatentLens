@@ -16,6 +16,7 @@ export interface PatentRecord {
   independentClaims: string[]; sourceUrl: string | null; importedAt: string; sourceKind: string; coverage: string; sampleSetVersion: string | null;
   fields: Record<FactName, FieldSource | null>;
   metadataVersion?: number; originalImportMetadata?: Record<CorrectableMetadata, string | string[] | null>; metadataCorrections?: MetadataCorrection[];
+  manualTags?: string[]; manualTagVersion?: number; manualTagRevisions?: {version:number;before:string[];after:string[];editor:string;at:string}[];
   classification: null | { output: unknown; validationStatus: "needs_review" | "validated" | "rejected" | "insufficient_evidence"; reviewedAt: string | null; taskId: string };
 }
 export interface PilotState { version: 1; records: PatentRecord[]; runs: Record<string, unknown>[]; gold: Record<string, { label: string | "uncertain"; setVersion: string; reviewer: string; reviewedAt: string }>; pilotV3?: PilotV3State }
