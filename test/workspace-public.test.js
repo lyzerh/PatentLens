@@ -35,3 +35,14 @@ test('normal local service redirects legacy pages while internal mode preserves 
   await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));const root=`http://127.0.0.1:${app.address().port}`;
   try{for(const path of ['/pilot','/pilot-v3','/pilot-thermal','/patent-search','/review-thermal']){const response=await fetch(root+path,{redirect:'manual'});assert.equal(response.status,302,path);assert.equal(response.headers.get('location'),'/workspace?legacy=1');}assert.equal((await fetch(root+'/patent-library')).status,200);}finally{app.closeAllConnections();await new Promise(resolve=>app.close(resolve));}
 });
+
+test('formal patent library uses the shared header without Pilot branding',async()=>{
+  const html=await readFile(new URL('../public/patent-library.html',import.meta.url),'utf8');
+  const nav=await readFile(new URL('../public/workspace-nav.js',import.meta.url),'utf8');
+  assert.match(html,/<header class="workspace-header"><\/header>/);
+  assert.match(html, /href="\/workspace.css"/);
+  assert.match(html, /id="record-total">0<\/strong>/);
+  assert.doesNotMatch(html, /PatentLens Pilot|PILOT 0\.2|<header class="top"/);
+  assert.match(nav, /workspace-brand/);
+  for(const path of ['/pilot','/pilot-v3','/pilot-thermal','/patent-search','/review-thermal'])assert.ok(!html.includes(`href="${path}"`),path);
+});
