@@ -1,6 +1,8 @@
 import {t,onLanguageChange,initializeI18n} from './i18n/index.js';
+import {mountWorkspaceNavigation} from './workspace-nav.js';
 import {trustBadge} from './trust-status.js';
 initializeI18n();
+if(location.pathname==='/patent-library'){document.body.dataset.library='true';mountWorkspaceNavigation('library');const label=()=>{document.querySelector('.intro h1').textContent=t('workspace.path.library');document.querySelector('.intro p').textContent=t('workspace.path.libraryDesc');};label();onLanguageChange(label);}
 const $ = id => document.getElementById(id);
 const fieldKeys = ['publicationNumber','title','abstract','assignees','inventors','priorityDate','filingDate','publicationDate','jurisdiction','cpc','ipc','familyId','legalStatus','independentClaims'];
 const domains = ["Battery Management", "Wireless Charging", "Thermal Management", "Display Technology", "Communication Technology", "Other", "Unknown"];

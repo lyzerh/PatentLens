@@ -1,24 +1,26 @@
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
-import {mkdir,mkdtemp,rm} from 'node:fs/promises';
+import {mkdir,mkdtemp,rm,writeFile,readFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {chromium} from 'playwright-core';
 import {createApp} from '../src/server.js';
+import {buildSyntheticDemoDataset} from './start-portfolio-demo.js';
 
 const browserPath=[process.env.CHROME_PATH,'C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(x=>x&&existsSync(x));
 if(!browserPath)throw new Error('Chrome or Edge browser unavailable');
 await mkdir(resolve('data'),{recursive:true});
 const dir=await mkdtemp(join(resolve('data'),'research-summary-synthetic-'));
+await writeFile(join(dir,'dataset.json'),JSON.stringify(buildSyntheticDemoDataset()));
 const forbidden=async()=>{throw Error('EXTERNAL_REQUEST_FORBIDDEN')};
 const server=createApp({pilotPath:join(dir,'pilot.json'),thermalDatasetPath:join(dir,'dataset.json'),featureStorePath:join(dir,'features.json'),repositoryStorePath:join(dir,'repository.json'),collectionStorePath:join(dir,'collections.json'),comparisonStorePath:join(dir,'comparisons.json'),featureLlmStorePath:join(dir,'llm-audit.json'),getXaiKey:()=>null,fetchImpl:forbidden});
 await new Promise(done=>server.listen(0,'127.0.0.1',done));
 let browser;
 try{
   browser=await chromium.launch({executablePath:browserPath,headless:true});
-  const context=await browser.newContext({viewport:{width:1440,height:900}}),page=await context.newPage(),errors=[];
-  page.on('pageerror',error=>errors.push(error.message));
+  const context=await browser.newContext({viewport:{width:1440,height:900},acceptDownloads:true}),page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.stack));
   const base=`http://127.0.0.1:${server.address().port}`;
-  await page.goto(base+'/pilot');
+  await page.goto(base+'/workspace');await page.locator('a[href="/patent-library"]').first().click();await page.waitForURL(/\/patent-library$/);
   await page.waitForFunction(()=>document.querySelector('#notice')?.textContent?.includes('就绪')||document.querySelector('#record-total')?.textContent==='0');
   const doc={publicationNumber:'EP9000888A1',title:'Synthetic official title',abstract:'Synthetic abstract',independentClaims:['A synthetic chamber comprising two plates.']};
   const imported=await page.evaluate(async doc=>{const response=await fetch('/api/pilot/import',{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench'},body:JSON.stringify({format:'json',text:JSON.stringify([doc])})});return response.json()},doc);
@@ -53,9 +55,27 @@ try{
   assert.equal(afterFailure.manualEntries?.length??0,0);assert.equal(afterFailure.manualRevisions?.length??0,0);
   await page.locator('#manual-claimA').fill('two plates');await page.locator('#manual-research').getByRole('button',{name:'保存人工研究'}).click();
   await page.waitForFunction(()=>document.querySelector('#manual-research')?.textContent?.includes('版本 1'));
-  await page.reload();await page.locator('#manual-research').waitFor();
+  await page.reload();await page.locator('#manual-research').waitFor();await page.waitForFunction(()=>document.querySelector('#manual-research')?.textContent?.includes('版本 1'));
   assert.equal(await page.locator('#manual-source').inputValue(),'external_ai_suggestion');
   assert.match(await page.locator('#manual-research').innerText(),/外部 AI 建议，待核查/);
+  const third={publicationNumber:'EP9000890A1',title:'Synthetic third chamber',independentClaims:['A synthetic chamber with a vent.']};
+  const thirdImport=await page.evaluate(async doc=>{const response=await fetch('/api/pilot/import',{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench'},body:JSON.stringify({format:'json',text:JSON.stringify([doc])})});return response.json()},third);assert.equal(thirdImport.added,1);
+  await page.evaluate(async({collectionId,recordId})=>{const token=(await(await fetch('/api/xai/settings/csrf')).json()).csrfToken;const response=await fetch('/api/patent-collections/add-manual',{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':token},body:JSON.stringify({collectionId,recordId})});if(!response.ok)throw new Error('ADD_MANUAL_FAILED');},{collectionId,recordId:thirdImport.ids[0]});
+  await page.goto(base+'/patent-repository?task=collections&collectionId='+collectionId);await page.locator('#collection-list option[value="'+collectionId+'"]').waitFor({state:'attached'});
+  await page.locator('.collection-editor').evaluate(node=>node.open=true);await page.locator('#collection-title').fill('Synthetic target');await page.locator('#collection-create').click();
+  await page.waitForFunction(()=>document.querySelector('#collection-list')?.selectedOptions[0]?.textContent?.includes('Synthetic target'));
+  const targetId=await page.locator('#collection-list').inputValue();assert.notEqual(targetId,collectionId);
+  page.on('dialog',dialog=>dialog.accept(dialog.type()==='prompt'?'Synthetic renamed target':undefined));
+  await page.getByRole('button',{name:'重命名集合'}).click();await page.getByText('集合已重命名。').waitFor();
+  await page.locator('#collection-list').selectOption(collectionId);await page.locator('#collection-detail details .row').filter({hasText:third.publicationNumber}).waitFor({state:'attached'});await page.locator('#collection-detail details').last().evaluate(node=>node.open=true);
+  const dependent=page.locator('#collection-detail details .row').filter({hasText:doc.publicationNumber});await dependent.getByRole('button',{name:'移除'}).click();await page.getByText(/被人工比较历史引用/).waitFor();
+  const movable=page.locator('#collection-detail details .row').filter({hasText:third.publicationNumber});await movable.locator('select').selectOption(targetId);await movable.getByRole('button',{name:'移动'}).click();await page.getByText('专利已移动。').waitFor();
+  await page.locator('#collection-list').selectOption(targetId);await page.locator('#collection-detail details .row').filter({hasText:third.publicationNumber}).waitFor({state:'attached'});await page.locator('#collection-detail details').last().evaluate(node=>node.open=true);
+  await page.locator('#collection-detail details .row').filter({hasText:third.publicationNumber}).getByRole('button',{name:'移除'}).click();await page.getByText('专利已移除。').waitFor();
+  await page.getByRole('button',{name:'删除集合'}).click();await page.getByText('集合已删除。').waitFor();
+  assert.equal(await page.locator('#collection-list option[value="'+targetId+'"]').count(),0);
+  await page.locator('#collection-list').selectOption(collectionId);await page.waitForFunction(()=>document.querySelector('#collection-detail')?.textContent?.includes('Synthetic comparison project'));assert.match(await page.locator('#collection-detail').innerText(),/Synthetic comparison project/);
+  for(const [button,extension] of [['collection-md','.md'],['collection-json','.json']]){const pending=page.waitForEvent('download');await page.locator('#'+button).click();const downloaded=await pending;assert.ok(downloaded.suggestedFilename().endsWith(extension));const file=join(dir,downloaded.suggestedFilename());try{await downloaded.saveAs(file);const content=await readFile(file,'utf8');assert.match(content,/Synthetic comparison project/);assert.match(content,/EP9000888A1/);assert.match(content,/External AI candidate/);if(extension==='.json')assert.equal(JSON.parse(content).manualComparison.version,1);}catch(error){if(!String(error).includes('download.saveAs: canceled'))throw error;console.log(extension+' browser download canceled by environment; file save unverified');}}
   assert.deepEqual(errors,[]);
   console.log('Synthetic UI: save, card, refresh, zh/en, 390px passed; no external request');
 }finally{await browser?.close();await new Promise(done=>server.close(done));await rm(dir,{recursive:true,force:true});}

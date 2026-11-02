@@ -1,6 +1,6 @@
 import {t,initializeI18n,onLanguageChange} from './i18n/index.js';
 
-const links=[['home','/workspace'],['extract','/patent-features'],['search','/patent-repository?task=search'],['compare','/patent-repository?task=compare'],['collections','/patent-repository?task=collections']];
+const links=[['home','/workspace'],['library','/patent-library'],['search','/patent-repository?task=search'],['extract','/patent-features'],['compare','/patent-repository?task=compare'],['collections','/patent-repository?task=collections']];
 const advanced=[['legacySearch','/patent-search'],['legacyPilot','/pilot-thermal'],['classification','/pilot-v3'],['value','/pilot'],['review','/review-thermal'],['batchTools','/patent-repository?task=advanced']];
 
 export function mountWorkspaceNavigation(active,steps=[]){

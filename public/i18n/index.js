@@ -15,9 +15,10 @@ import registry from './registry.js';
 import status from './status.js';
 import manual from './manual.js';
 import * as enterpriseUx from './enterprise-ux.js';
+import collections from './collections.js';
 
 const storageKey = 'patentlens.locale';
-const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh,...features.zh,...compare.zh,...repository.zh,...workspace.zh,...guided.zh,...registry.zh,...status.zh,...manual.zh,...enterpriseUx.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en,...features.en,...compare.en,...repository.en,...workspace.en,...guided.en,...registry.en,...status.en,...manual.en,...enterpriseUx.en}};
+const catalogs = {'zh-CN':{...zh,...zhStatic,...pilotZh.zh,...v3Zh.zh,...searchZh.zh,...review.zh,...features.zh,...compare.zh,...repository.zh,...workspace.zh,...guided.zh,...registry.zh,...status.zh,...manual.zh,...collections.zh,...enterpriseUx.zh}, en:{...en,...enStatic,...pilotZh.en,...v3Zh.en,...searchZh.en,...review.en,...features.en,...compare.en,...repository.en,...workspace.en,...guided.en,...registry.en,...status.en,...manual.en,...collections.en,...enterpriseUx.en}};
 let language = 'zh-CN';
 try { if (localStorage.getItem(storageKey) === 'en') language = 'en'; } catch {}
 const listeners = new Set();
