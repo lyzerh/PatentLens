@@ -53,6 +53,8 @@ npm run demo:portfolio
 
 流程：登记／原文 → 可选 Rules 或受控 Grok → 技术特征候选与证据 → 检索／比较 → 研究集合。前端为原生 HTML/CSS/JavaScript，后端为本机 Node.js，分析与验证核心使用 TypeScript；中英文切换不改变原文和存储字段。详见 [Feature Schema](docs/v0.8.0/patent-feature-v1.md)、[特征库](docs/v0.8.0/patent-repository-v1.md)和[人工审核](docs/v0.7.0/human-annotation-pilot.md)。
 
+正式导航仅显示工作台、资料库、检索、解析、比较和研究集合。旧实验页面在正常服务中转至工作台；仅内部回归测试可设置 `PATENT_LEGACY_UI=1` 保留旧页面直达。原有实验 API 与历史数据不受影响。
+
 `npm start` 默认使用 `http://127.0.0.1:4317/`。公开仓库不含真实全文、Grok 响应或私有修订。可用 `node scripts/rebuild-public-thermal.js` 建立**新的** EPO 快照；接口、版本及使用条款会影响结果，新快照不能替代冻结历史。公开[来源清单](samples/thermal-23-manifest.json)只含公开号与链接。
 
 ```bash

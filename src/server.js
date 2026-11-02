@@ -20,7 +20,7 @@ import { createXaiKeySession } from "./xai-key-session.js";
 export const APP_VERSION = "0.6.0";
 
 const PUBLIC = new URL("../public/", import.meta.url);
-const staticFiles = new Map([["/", ["workspace.html", "text/html; charset=utf-8"]], ["/workspace", ["workspace.html", "text/html; charset=utf-8"]], ["/patent-library", ["pilot.html", "text/html; charset=utf-8"]], ["/workspace.js", ["workspace.js", "text/javascript; charset=utf-8"]], ["/workspace-nav.js", ["workspace-nav.js", "text/javascript; charset=utf-8"]], ["/workspace.css", ["workspace.css", "text/css; charset=utf-8"]], ["/patent-search", ["index.html", "text/html; charset=utf-8"]], ["/app.js", ["app.js", "text/javascript; charset=utf-8"]], ["/browser-xai.js", ["browser-xai.js", "text/javascript; charset=utf-8"]], ["/model-presets.js", ["model-presets.js", "text/javascript; charset=utf-8"]], ["/style.css", ["style.css", "text/css; charset=utf-8"]], ["/pilot", ["pilot.html", "text/html; charset=utf-8"]], ["/pilot.js", ["pilot.js", "text/javascript; charset=utf-8"]], ["/pilot.css", ["pilot.css", "text/css; charset=utf-8"]], ["/pilot-v3", ["pilot-v3.html", "text/html; charset=utf-8"]], ["/pilot-v3.js", ["pilot-v3.js", "text/javascript; charset=utf-8"]], ["/pilot-v3.css", ["pilot-v3.css", "text/css; charset=utf-8"]], ["/pilot-thermal", ["pilot-thermal.html", "text/html; charset=utf-8"]], ["/pilot-thermal.js", ["pilot-thermal.js", "text/javascript; charset=utf-8"]], ["/pilot-thermal.css", ["pilot-thermal.css", "text/css; charset=utf-8"]]]);
+const staticFiles = new Map([["/", ["workspace.html", "text/html; charset=utf-8"]], ["/workspace", ["workspace.html", "text/html; charset=utf-8"]], ["/patent-library", ["patent-library.html", "text/html; charset=utf-8"]], ["/workspace.js", ["workspace.js", "text/javascript; charset=utf-8"]], ["/workspace-nav.js", ["workspace-nav.js", "text/javascript; charset=utf-8"]], ["/workspace.css", ["workspace.css", "text/css; charset=utf-8"]], ["/patent-search", ["index.html", "text/html; charset=utf-8"]], ["/app.js", ["app.js", "text/javascript; charset=utf-8"]], ["/browser-xai.js", ["browser-xai.js", "text/javascript; charset=utf-8"]], ["/model-presets.js", ["model-presets.js", "text/javascript; charset=utf-8"]], ["/style.css", ["style.css", "text/css; charset=utf-8"]], ["/pilot", ["pilot.html", "text/html; charset=utf-8"]], ["/pilot.js", ["pilot.js", "text/javascript; charset=utf-8"]], ["/pilot.css", ["pilot.css", "text/css; charset=utf-8"]], ["/pilot-v3", ["pilot-v3.html", "text/html; charset=utf-8"]], ["/pilot-v3.js", ["pilot-v3.js", "text/javascript; charset=utf-8"]], ["/pilot-v3.css", ["pilot-v3.css", "text/css; charset=utf-8"]], ["/pilot-thermal", ["pilot-thermal.html", "text/html; charset=utf-8"]], ["/pilot-thermal.js", ["pilot-thermal.js", "text/javascript; charset=utf-8"]], ["/pilot-thermal.css", ["pilot-thermal.css", "text/css; charset=utf-8"]]]);
 for (const [route,file,type] of [["/review-thermal","review-thermal.html","text/html; charset=utf-8"],["/review-thermal.js","review-thermal.js","text/javascript; charset=utf-8"],["/review-thermal.css","review-thermal.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const [route,file,type] of [["/patent-features","patent-features.html","text/html; charset=utf-8"],["/patent-features.js","patent-features.js","text/javascript; charset=utf-8"],["/patent-features.css","patent-features.css","text/css; charset=utf-8"],["/claim-coverage.js","claim-coverage.js","text/javascript; charset=utf-8"]]) staticFiles.set(route,[file,type]);
 for (const [route,file,type] of [["/patent-compare","patent-compare.html","text/html; charset=utf-8"],["/patent-compare.js","patent-compare.js","text/javascript; charset=utf-8"],["/patent-compare.css","patent-compare.css","text/css; charset=utf-8"]]) staticFiles.set(route,[file,type]);
@@ -29,6 +29,7 @@ staticFiles.set('/registry-context.js',['registry-context.js','text/javascript; 
 staticFiles.set('/manual-research.js',['manual-research.js','text/javascript; charset=utf-8']);
 staticFiles.set('/trust-status.js',['trust-status.js','text/javascript; charset=utf-8']);
 staticFiles.set('/enterprise-ux.css',['enterprise-ux.css','text/css; charset=utf-8']);
+staticFiles.set('/patent-library.css',['patent-library.css','text/css; charset=utf-8']);
 staticFiles.set('/i18n/enterprise-ux.js',['i18n/enterprise-ux.js','text/javascript; charset=utf-8']);
 for (const file of ["ui-lab.js", "ui-metrics.js"]) staticFiles.set("/" + file, [file, "text/javascript; charset=utf-8"]);
 for (const file of ["index.js", "zh-CN.js", "en.js", "zh-static.js", "en-static.js", "static-source.js", "pilot.js", "v3.js", "search.js", "review.js", "features.js", "compare.js", "repository.js", "workspace.js", "guided.js", "registry.js", "status.js", "manual.js", "collections.js"]) staticFiles.set("/i18n/"+file,["i18n/"+file,"text/javascript; charset=utf-8"]);
@@ -54,7 +55,7 @@ async function readBody(req, maxBytes = 1500000) {
   } catch { throw new AppError("INVALID_JSON", "请求格式不是 JSON 对象。"); }
 }
 
-export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, getXaiKey } = {}) {
+export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, getXaiKey, legacyUiMode = true } = {}) {
   const keySession = createXaiKeySession({ fetchImpl, getEnvironmentKey: getXaiKey });
   const pilot = createPilotService({ path: pilotPath, fetchImpl, retrievalFetchImpl, getKey: keySession.getKey });
   const thermal = createThermalService({ datasetPath: thermalDatasetPath, reviewPath: thermalReviewPath, smokePath: thermalSmokePath, legacyPath: pilotPath, fetchImpl, getKey: keySession.getKey });
@@ -88,6 +89,7 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
         throw new AppError("NOT_FOUND", "接口不存在。", 404);
       }
       if (req.method === "GET" && pathname === "/api/health") return send(res, 200, { ok: true, app: "patent-intelligence-workbench", version: APP_VERSION, mode: "local", browserDirect: true, retrievalNetwork });
+      if (req.method === "GET" && !legacyUiMode && ["/pilot","/pilot-v3","/pilot-thermal","/patent-search","/review-thermal"].includes(pathname)) { res.writeHead(302,{Location:"/workspace?legacy=1","Cache-Control":"no-store"});res.end();return; }
       if (req.method === "GET" && staticFiles.has(pathname)) {
         const [file, type] = staticFiles.get(pathname);
         const bytes = await readFile(new URL(file, PUBLIC));
@@ -210,7 +212,7 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
 
 export async function createRuntimeApp() {
   const transport = createRetrievalTransport(await loadRetrievalNetwork());
-  const app = createApp({ retrievalFetchImpl: transport.fetchImpl, retrievalNetwork: transport.metadata });
+  const app = createApp({ retrievalFetchImpl: transport.fetchImpl, retrievalNetwork: transport.metadata, legacyUiMode: process.env.PATENT_LEGACY_UI === "1" });
   app.once("close", () => { transport.close().catch(() => {}); });
   return app;
 }
