@@ -11,3 +11,13 @@ body[data-library] .intro h1{font-size:clamp(28px,4vw,44px);color:#10283b}
 #collection-detail details>.row select{min-width:170px;max-width:100%}
 @media(max-width:390px){#collection-detail details>.row>*{max-width:100%}#collection-detail details>.row select{width:100%}}
 body[data-task="search"] #search,body[data-task="compare"] #compare,body[data-task="collections"] #add-pair,#quick-save,#generate{background:#10283b;color:white;border-color:#10283b}body[data-task="search"] #search:hover,body[data-task="compare"] #compare:hover,body[data-task="collections"] #add-pair:hover,#quick-save:hover,#generate:hover{background:#006f69}#quick-add[hidden]{display:none}#quick-add{border-left:4px solid #10a6a0}#quick-add select,#quick-add input{max-width:420px}#quick-add a{display:inline-block;margin-left:12px}.collection-editor{border:1px solid #b9cbd3;padding:12px;margin:12px 0}.collection-editor summary{cursor:pointer;color:#005f68}#collection-summary .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}#collection-summary .row strong,#collection-summary .row small{grid-column:1}#collection-summary .row button{grid-column:2;grid-row:1/4}#results .row>details{margin:6px 0;color:#476372}#results .row>details summary{cursor:pointer}#results .row>a{display:inline-block;margin:5px;padding:8px 11px;background:#e9f7f5;border:1px solid #457584;color:#005f68}@media(max-width:390px){#collection-summary .row{display:block}#collection-summary .row button{width:100%}}
+
+/* Formal pages share one quiet header and readable technical details. */
+body:has(.workspace-nav)>header>strong,body:has(.workspace-nav)>header>a,body:has(.workspace-nav)>header>nav:not(.workspace-nav){display:none}
+body:has(.workspace-nav)>header{gap:10px}body:has(.workspace-nav) main{max-width:1320px;min-width:0}
+body:has(.workspace-nav) .panel{min-width:0;overflow-wrap:anywhere}
+body:has(.workspace-nav) pre,body:has(.workspace-nav) code{white-space:pre-wrap;overflow-wrap:anywhere}
+body:has(.workspace-nav) table{display:block;max-width:100%;overflow-x:auto}
+body:has(.workspace-nav) input,body:has(.workspace-nav) select,body:has(.workspace-nav) textarea{max-width:100%}
+.technical-details{margin-top:14px}.technical-details summary{cursor:pointer;color:#005f68;font-weight:700}
+@media(max-width:390px){body:has(.workspace-nav) main{padding:12px}body:has(.workspace-nav) button{max-width:100%;overflow-wrap:anywhere}}
