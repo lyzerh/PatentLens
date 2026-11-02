@@ -16,8 +16,8 @@ PatentLens 是面向企业知识产权专员和研发协作者的**本机研究�
 
 | 企业场景 | 实际产出 | 入口 |
 | --- | --- | --- |
-| 收到一批专利资料 | 去重登记、当前元数据、原值与更正履历 | `/pilot` |
-| 整理散热等专题 | 登记记录筛选；已有解析记录的技术字段检索 | `/pilot`、`/patent-repository` |
+| 收到一批专利资料 | 去重登记、当前元数据、原值与更正履历 | `/patent-library` |
+| 整理散热等专题 | 登记记录筛选；已有解析记录的技术字段检索 | `/patent-library`、`/patent-repository` |
 | 了解一项技术方案 | Claim 1 原文、可选机器候选要素／限定／关系及证据 | `/patent-features` |
 | 向研发说明两篇专利区别 | 人工差异与双方逐字引文；可选机器候选对应 | `/patent-compare` |
 | 持续研究与分享 | 保存文献、备注、所选版本，导出 Markdown／JSON | 研究集合 |
@@ -25,10 +25,14 @@ PatentLens 是面向企业知识产权专员和研发协作者的**本机研究�
 ### 已支持的工作与边界
 
 - **登记：** CSV／JSON 导入提交的字段，EPO XML 可在线读取。按公开号去重；标题、申请人、日期等允许字段可带原因更正，保留原值与履历。可添加自填人工标签。
-- **检索：** `/patent-search` 用于原始在线检索和粘贴文本测试，**粘贴不等于登记**；`/pilot` 查已登记记录；特征库只查已有解析记录，区分原文候选命中与结构化字段命中。
+- **检索：** `/patent-search` 用于原始在线检索和粘贴文本测试，**粘贴不等于登记**；`/patent-library` 查已登记记录；特征库只查已有解析记录，区分原文候选命中与结构化字段命中。
 - **研究：** 无技术特征记录仍能人工比较已登记文献、保存双侧原文引文。免费 Rules 和可选 Grok 生成的是机器候选，证据定位通过不证明技术解释正确。
 - **集合：** 保存人工研究或选定版本的特征记录，刷新后继续编辑并导出。集合不是企业权属资产台账。
 - **统计与高级实验：** `/pilot` 按明确口径统计文献、年份、申请人和法域；技术领域分布只计已确认分类。AI 分类、模型对照和价值验证属于旧版高级实验，未成为主研究流程的审核结论。
+
+### 典型业务场景
+
+知识产权专员可在资料库找到两篇已登记专利，阅读各自 Claim 1；如已有 Rules 解析记录，可查看技术要素、限定和逐字证据，再进入双栏比较。将经人工核对的差异与双方引文保存到研究集合，随后导出 Markdown 或 JSON。公开演示使用下述 Synthetic 样本；实际专利的机器候选仍须专业复核。
 
 ### 无 Key 快速演示
 
@@ -39,7 +43,7 @@ npm ci
 npm run demo:portfolio
 ```
 
-打开[工作台](http://127.0.0.1:4323/workspace)。在 [`/pilot`](http://127.0.0.1:4323/pilot) 导入[三篇合成登记样本](docs/user-guide/demo-registry.json)，可按[指南](docs/user-guide/README.md)完成人工研究。要体验免费解析，在[特征库](http://127.0.0.1:4323/patent-repository)选择 EP9000001A1，预览并运行 Rules 批量入库，再查看技术特征。**EP9000001A1–EP9000004A1 及 EPO 格式链接均为 Synthetic／mock 占位，不是真实专利来源。**不要把样本导入私人登记册。演示无需 EPO 网络或 xAI Key。
+打开[工作台](http://127.0.0.1:4323/workspace)。在[专利资料库](http://127.0.0.1:4323/patent-library)导入[三篇合成登记样本](docs/user-guide/demo-registry.json)，可按[指南](docs/user-guide/README.md)完成人工研究。要体验免费解析，在[特征库](http://127.0.0.1:4323/patent-repository)选择 EP9000001A1，预览并运行 Rules 批量入库，再查看技术特征。**EP9000001A1–EP9000004A1 及 EPO 格式链接均为 Synthetic／mock 占位，不是真实专利来源。**不要把样本导入私人登记册。演示无需 EPO 网络或 xAI Key。
 
 ### 产品边界
 
@@ -69,17 +73,21 @@ npm run test:local
 
 | Task | Supported outcome | Entry |
 | --- | --- | --- |
-| Receive documents | Deduplicated registry, current metadata and correction history | `/pilot` |
-| Build a technical topic set | Filter registered documents; search structured fields in already extracted records | `/pilot`, `/patent-repository` |
+| Receive documents | Deduplicated registry, current metadata and correction history | `/patent-library` |
+| Build a technical topic set | Filter registered documents; search structured fields in already extracted records | `/patent-library`, `/patent-repository` |
 | Understand a claim | Read Claim 1; optionally inspect candidate elements, limitations, relations and quotations | `/patent-features` |
 | Explain two solutions to R&D | Manual differences with both exact quotations; optional machine candidate alignments | `/patent-compare` |
 | Continue and share work | Save documents, notes and selected versions; export Markdown or JSON | Research collections |
 
-CSV/JSON import stores submitted registry fields; online EPO XML import fetches source fields. The separate `/patent-search` page searches external sources and accepts pasted text **for testing, not registry import**. The feature repository searches existing extraction records, not every registered patent; text candidate and structured field hits differ. `/pilot` provides counts and distributions under stated rules. Its AI classification, model comparison and value tools are legacy advanced experiments, not accepted business findings. Collections organize research, not ownership.
+CSV/JSON import stores submitted registry fields; online EPO XML import fetches source fields. The separate `/patent-search` page searches external sources and accepts pasted text **for testing, not registry import**. The feature repository searches existing extraction records, not every registered patent; text candidate and structured field hits differ. `/patent-library` reuses the registry; legacy `/pilot` provides counts and distributions under stated rules. Its AI classification, model comparison and value tools are legacy advanced experiments, not accepted business findings. Collections organize research, not ownership.
+
+### Typical research task
+
+An IP specialist locates two registered patents, reads each Claim 1, optionally checks Rules feature candidates and exact source quotations, then compares the claims side by side. The specialist records reviewed differences and quotations in a research collection and exports Markdown or JSON. The public demo below uses synthetic records; real patent candidates still need professional review.
 
 ### Quick demo without an API key
 
-Requires Node.js 24+ and npm. In a clean clone run `npm ci` and `npm run demo:portfolio`, then open [Workspace](http://127.0.0.1:4323/workspace). Import the [three synthetic registry entries](docs/user-guide/demo-registry.json) at `/pilot` for the manual workflow. For free feature extraction, select EP9000001A1 in `/patent-repository`, preview and run the Rules batch, then inspect `/patent-features`. EP9000001A1–EP9000004A1 and EPO-shaped URLs are **synthetic/mock placeholders, not real sources**. Keep them out of private registries.
+Requires Node.js 24+ and npm. In a clean clone run `npm ci` and `npm run demo:portfolio`, then open [Workspace](http://127.0.0.1:4323/workspace). Import the [three synthetic registry entries](docs/user-guide/demo-registry.json) at `/patent-library` for the manual workflow. For free feature extraction, select EP9000001A1 in `/patent-repository`, preview and run the Rules batch, then inspect `/patent-features`. EP9000001A1–EP9000004A1 and EPO-shaped URLs are **synthetic/mock placeholders, not real sources**. Keep them out of private registries.
 
 ### Product limits
 
