@@ -15,6 +15,7 @@ import { createPatentComparisonService } from "./pilot/patent-comparison.ts";
 import { createPatentRepositoryService } from "./pilot/patent-repository.ts";
 import { createPatentCollectionService } from "./pilot/patent-collections.ts";
 import { createFeatureLlmService } from "./pilot/feature-llm-service.ts";
+import { createSummaryLlmService } from "./pilot/summary-llm.js";
 import { createXaiKeySession } from "./xai-key-session.js";
 
 export const APP_VERSION = "0.6.0";
@@ -56,7 +57,7 @@ async function readBody(req, maxBytes = 1500000) {
   } catch { throw new AppError("INVALID_JSON", "请求格式不是 JSON 对象。"); }
 }
 
-export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, getXaiKey, legacyUiMode = true } = {}) {
+export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, retrievalNetwork = { mode: "direct", proxyUrl: null, source: "injected", scope: "patent_retrieval_only" }, pilotPath, thermalDatasetPath, thermalReviewPath, thermalSmokePath, thermalAnnotationPath, featureStorePath, comparisonStorePath, repositoryStorePath, collectionStorePath, featureLlmStorePath, featureLlmProvider, summaryLlmStorePath, summaryLlmProvider, summaryLlmProviderKind, getXaiKey, legacyUiMode = true } = {}) {
   const keySession = createXaiKeySession({ fetchImpl, getEnvironmentKey: getXaiKey });
   const pilot = createPilotService({ path: pilotPath, fetchImpl, retrievalFetchImpl, getKey: keySession.getKey });
   const thermal = createThermalService({ datasetPath: thermalDatasetPath, reviewPath: thermalReviewPath, smokePath: thermalSmokePath, legacyPath: pilotPath, fetchImpl, getKey: keySession.getKey });
@@ -66,6 +67,7 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
   const repository = createPatentRepositoryService({datasetPath:thermalDatasetPath,featureStorePath,storePath:repositoryStorePath});
   const collections = createPatentCollectionService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:collectionStorePath,pilotPath});
   const featureLlm = createFeatureLlmService({datasetPath:thermalDatasetPath,featureStorePath,repositoryStorePath,storePath:featureLlmStorePath,provider:featureLlmProvider,fetchImpl,getKey:keySession.getKey});
+  const summaryLlm = createSummaryLlmService({readRegistry:()=>pilot.store.read(),storePath:summaryLlmStorePath,provider:summaryLlmProvider,providerKind:summaryLlmProviderKind,fetchImpl,getKey:keySession.getKey});
   return http.createServer(async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
@@ -193,6 +195,11 @@ export function createApp({ fetchImpl = fetch, retrievalFetchImpl = fetchImpl, r
       if (pathname.startsWith("/api/pilot/")) {
         try { return send(res, 200, await pilot.handle(pathname.slice("/api/pilot/".length), body, controller.signal)); }
         catch (e) { throw e instanceof AppError ? e : new AppError("PILOT_ERROR", e instanceof Error ? e.message : "Pilot 操作失败", 400); }
+      }
+      if (pathname.startsWith("/api/summary-llm/")) {
+        if (!isLoopbackAddress(req.socket.remoteAddress)||origin!=="http://"+req.headers.host||!keySession.checkCsrf(req.headers["x-patent-csrf"])) throw new AppError("SUMMARY_AUTH_REQUIRED","同源会话验证失败。",403);
+        try { const action=pathname.slice("/api/summary-llm/".length);if(action==='preflight')return send(res,200,await summaryLlm.preflight(body.recordId));if(action==='authorize')return send(res,200,await summaryLlm.authorize(body));if(action==='execute')return send(res,200,await summaryLlm.execute(body));throw new AppError('NOT_FOUND','接口不存在。',404);}
+        catch(e){throw e instanceof AppError?e:new AppError('SUMMARY_ERROR',e instanceof Error?e.message:'简介生成失败',400);}
       }
       if (pathname === "/api/diagnostics") return send(res, 200, await diagnoseXai(options));
       if (pathname === "/api/browser-prepare") return send(res, 200, prepareBrowserExperiment(body.input, body.config));

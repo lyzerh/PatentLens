@@ -24,6 +24,7 @@ const files = [
   "test/patent-repository-audit-public.test.js",
   "test/feature-llm-public.test.js",
   "test/capability-gate-public.test.js",
+  "test/summary-llm-public.test.js",
   "test/thermal-smoke-ui.test.js",
   "test/ui-lab.test.js",
   "test/workbench.test.js",

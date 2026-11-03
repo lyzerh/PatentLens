@@ -68,6 +68,9 @@ details p{margin:8px 0;color:var(--library-muted);font-size:13px}
 .library-fact-note{display:block;font-size:12px;color:#56747c}
 .library-fact .library-link{display:block;max-width:100%;margin-top:0;overflow-wrap:anywhere}
 .library-fact button{max-width:100%;min-height:34px;padding:6px 10px;margin-top:5px;font-size:13px;font-weight:500;text-align:left;white-space:normal}
+.library-summary-assist{margin-top:14px;border-top:1px solid var(--library-line);padding-top:12px}
+.library-summary-assist>button{margin:5px 8px 5px 0}
+.library-summary-preview{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;margin:10px 0}
 .library-form{display:grid;gap:11px;margin-top:14px}
 .library-form label{display:grid;gap:4px}
 .library-form .library-form-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
