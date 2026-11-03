@@ -39,10 +39,13 @@ test('normal local service redirects legacy pages while internal mode preserves 
 test('formal patent library uses the shared header without Pilot branding',async()=>{
   const html=await readFile(new URL('../public/patent-library.html',import.meta.url),'utf8');
   const nav=await readFile(new URL('../public/workspace-nav.js',import.meta.url),'utf8');
-  assert.match(html,/<header class="workspace-header"><\/header>/);
+  const script=await readFile(new URL('../public/patent-library.js',import.meta.url),'utf8');
+  assert.match(html,/<header><\/header>/);
   assert.match(html, /href="\/workspace.css"/);
+  assert.match(html, /src="\/patent-library.js"/);
   assert.match(html, /id="record-total">0<\/strong>/);
-  assert.doesNotMatch(html, /PatentLens Pilot|PILOT 0\.2|<header class="top"/);
+  assert.doesNotMatch(html, /PatentLens Pilot|PILOT 0\.2|<header class="top"|\/pilot\.css|\/pilot\.js|id="lab"|id="benchmark"/);
+  assert.match(script, /mountWorkspaceNavigation\('library'\)/);
   assert.match(nav, /workspace-brand/);
   for(const path of ['/pilot','/pilot-v3','/pilot-thermal','/patent-search','/review-thermal'])assert.ok(!html.includes(`href="${path}"`),path);
 });
