@@ -83,6 +83,6 @@ EP4761489A1 的审计已检查；一次性调用返回未知计费状态。依�
 ## 7. Git 与发布状态
 
 - UAT-01 基线：`3f4f5bf5c808ad7c41033dc6bc2dbb9cba6269a0`，位于当前分支祖先链。
-- UAT-02 文件提交 SHA：见最终交付中列出的实现提交。
-- 推送及远端 CI：待本地提交完成后记录。未推送成功不声称远端 CI 通过。
+- UAT-02 实现提交 SHA：`d99d4a5c6ac76977cfafbd0ca17cb844b0f5d25f`。
+- 原生 `git push origin main` 因无法连接 `github.com:443` 失败。已连接的 GitHub 账号元数据显示仓库可推送，但 Git Blobs 写入接口返回 403 `Resource not accessible by integration`，因此未对远端作任何写入。UAT-01 与 UAT-02 提交保留在本地；远端 CI 未运行，本报告不声称远端 CI 通过。
 - 本轮改动不包括既有未提交的 `src/network.js`、`src/server.js`、`test/retrieval-network.test.js`；这些文件由原工作区保留，不纳入 UAT-02 提交。
