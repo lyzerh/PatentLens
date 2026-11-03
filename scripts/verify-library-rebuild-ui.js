@@ -98,7 +98,28 @@ try{
   await page.getByText('字段已记录为人工核验；请确保已亲自比对来源。').waitFor();
   await page.locator('.library-detail-section details').filter({has:page.locator('.library-facts')}).first().evaluate(item=>item.open=true);
   assert.match(await page.locator('.library-fact').filter({has:page.locator('.library-fact-label', {hasText:'CPC 分类号'})}).innerText(),/人工已核验/);
+  const workspaceEntry=await page.locator('#record-detail a[href^="/workspace?registry="]').getAttribute('href');
+  await page.goto(base+workspaceEntry);await page.locator('.registry-context-actions a').first().waitFor();
+  assert.ok(errors.every(message=>message==='Failed to load resource: the server responded with a status of 400 (Bad Request)'));errors.length=0; // Synthetic record has no frozen source.
+  const expectedRecord=new URLSearchParams(workspaceEntry.split('?')[1]).get('registry');
+  assert.ok(expectedRecord);
+  assert.equal(await page.locator('.registry-context-actions a').first().getAttribute('href'),'/patent-library?record='+encodeURIComponent(expectedRecord));
+  assert.equal(await page.locator('.registry-context-actions a').last().getAttribute('href'),'/patent-repository?task=search&registry='+encodeURIComponent(expectedRecord));
+  for(const [width,lang] of [[1440,'zh-CN'],[768,'zh-CN'],[390,'zh-CN'],[1440,'en'],[390,'en']]){
+    await page.setViewportSize({width,height:900});await page.locator(`.language-switcher button[data-lang="${lang}"]`).click();
+    const buttons=await page.locator('.registry-context-actions a').evaluateAll(items=>items.map(item=>{const style=getComputedStyle(item),bounds=item.getBoundingClientRect();return {background:style.backgroundColor,color:style.color,width:bounds.width,height:bounds.height};}));
+    assert.ok(buttons.every(item=>item.background==='rgb(255, 255, 255)'&&item.color==='rgb(0, 94, 112)'&&item.width>100&&item.height>=40),`${width} ${lang}: ${JSON.stringify(buttons)}`);
+    assert.ok(await page.locator('.registry-context-source').isVisible());
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth<=2));
+    await page.screenshot({path:join(shots,`workspace-registry-${width}-${lang}.png`),fullPage:true});
+  }
+  await page.locator('.registry-context-actions a').first().click();await page.waitForURL(/\/patent-library\?record=/);
+  assert.match(await page.locator('#record-detail').innerText(),/Synthetic corrected title/);
+  await page.goto(base+workspaceEntry);await page.locator('.registry-context-actions a').last().waitFor();assert.ok(errors.every(message=>message==='Failed to load resource: the server responded with a status of 400 (Bad Request)'));errors.length=0;
+  await page.locator('.registry-context-actions a').last().click();await page.waitForURL(/\/patent-repository\?task=search&registry=/);
+  assert.ok(await page.locator('#registry-context').isVisible());
+  assert.ok(errors.every(message=>message==='Failed to load resource: the server responded with a status of 400 (Bad Request)'));errors.length=0;
   await page.locator('.workspace-nav a[href="/workspace"]').click();await page.waitForURL(/\/workspace$/);
-  assert.deepEqual(errors,[]);assert.equal(externalCalls,0);
+  assert.ok(errors.every(message=>message==='Failed to load resource: the server responded with a status of 400 (Bad Request)'),JSON.stringify(errors));assert.equal(externalCalls,0);
   console.log('Library browser acceptance: JSON/CSV import, dedup, EPO rejection, search, metadata, summary, tags, history, refresh, zh/en and 1440/768/390 passed; external calls 0');
 }finally{await browser?.close();await new Promise(done=>app.close(done));await rm(dir,{recursive:true,force:true});}
