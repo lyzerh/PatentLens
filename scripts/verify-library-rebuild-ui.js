@@ -33,7 +33,7 @@ try{
   const navStyle=await page.locator('header').evaluate(header=>({background:getComputedStyle(header).backgroundColor,link:getComputedStyle(header.querySelector('.workspace-nav a')).color}));
   assert.equal(navStyle.background,'rgb(16, 40, 59)');assert.notEqual(navStyle.link,navStyle.background);
 
-  const first={publicationNumber:'EP9000888A1',title:'Synthetic official chamber title',abstract:'Synthetic abstract for a two plate chamber.',assignees:['Synthetic applicant'],independentClaims:['A synthetic chamber comprising two plates.']};
+  const first={publicationNumber:'EP9000888A1',title:'Synthetic official chamber title',abstract:'Synthetic abstract for a two plate chamber.',assignees:['Synthetic applicant'],independentClaims:['A synthetic chamber comprising two plates.'],sourceUrl:'https://example.org/synthetic/EP9000888A1',priorityDate:'2024-01-12',publicationDate:'2025-08-21',cpc:['H01L23/427','H05K7/20336','F28D15/0233','H01M10/6554','H05K7/20409'],ipc:['H01L23/427','F28D15/02','H05K7/20','H01M10/6554']};
   await page.locator('#import-file').setInputFiles({name:'synthetic-library.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify([first]))});
   await page.locator('#import-button').click();await page.getByText('导入 1 条，跳过重复 0 条。').waitFor();
   assert.equal(await page.locator('#record-total').innerText(),'1');
@@ -49,6 +49,7 @@ try{
   assert.equal(await page.locator('#registry-list button').count(),1);
   await page.locator('#registry-list button').click();
   assert.match(await page.locator('#record-detail').innerText(),/Synthetic official chamber title/);
+  await page.getByText('更多著录字段').click();
 
   await page.locator('.library-metadata-editor').evaluate(item=>item.open=true);
   await page.locator('.library-metadata-editor select').selectOption('title');
@@ -85,10 +86,18 @@ try{
 
   for(const [width,lang] of [[1440,'en'],[390,'en'],[1440,'zh-CN'],[768,'zh-CN'],[390,'zh-CN']]){
     await page.setViewportSize({width,height:900});await page.locator(`.language-switcher button[data-lang="${lang}"]`).click();
+    const more=page.locator('.library-detail-section details').filter({has:page.locator('.library-facts')}).first();await more.evaluate(item=>item.open=true);
+    const layout=await more.locator('.library-fact').evaluateAll(items=>items.map(item=>{const bounds=item.getBoundingClientRect(),value=item.querySelector('.library-fact-value')?.getBoundingClientRect(),note=item.querySelector('.library-fact-note')?.getBoundingClientRect(),link=item.querySelector('.library-link')?.getBoundingClientRect(),button=item.querySelector('button')?.getBoundingClientRect();return {label:item.querySelector('.library-fact-label')?.textContent,valid:(!value||value.right<=bounds.right+1)&&(!note||!value||note.top>=value.bottom-1)&&(!link||!note||link.top>=note.bottom-1)&&(!button||!link||button.top>=link.bottom+4)&&(!button||button.right<=bounds.right+1)};}));
+    assert.ok(layout.every(item=>item.valid),`${width} ${lang}: ${JSON.stringify(layout)}`);
+    assert.ok(layout.length>=9);
     assert.ok((await page.locator('.workspace-nav a').first().evaluate(item=>item.getBoundingClientRect().width))>0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);assert.ok(overflow<=2,`${width} ${lang}: ${overflow}px overflow`);
     await page.screenshot({path:join(shots,`patent-library-${width}-${lang}.png`),fullPage:true});
   }
+  await page.locator('.library-fact').filter({has:page.locator('.library-fact-label', {hasText:'CPC 分类号'})}).getByRole('button').click();
+  await page.getByText('字段已记录为人工核验；请确保已亲自比对来源。').waitFor();
+  await page.locator('.library-detail-section details').filter({has:page.locator('.library-facts')}).first().evaluate(item=>item.open=true);
+  assert.match(await page.locator('.library-fact').filter({has:page.locator('.library-fact-label', {hasText:'CPC 分类号'})}).innerText(),/人工已核验/);
   await page.locator('.workspace-nav a[href="/workspace"]').click();await page.waitForURL(/\/workspace$/);
   assert.deepEqual(errors,[]);assert.equal(externalCalls,0);
   console.log('Library browser acceptance: JSON/CSV import, dedup, EPO rejection, search, metadata, summary, tags, history, refresh, zh/en and 1440/768/390 passed; external calls 0');
