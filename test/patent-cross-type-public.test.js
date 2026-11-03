@@ -19,4 +19,30 @@ test('synthetic material retains composition basis, numeric bounds and evidence'
 test('synthetic device keeps parts separate and grounded connections; ternary placement needs review',()=>{const c=extractRuleFeatures(device),v=validateFeatureCandidate(c,device);assert.equal(c.technicalSubject.type,'Apparatus');assert.equal(v.accepted,true);assert.equal(c.elements.filter(x=>x.elementName==='vapor chamber').length,1);for(const name of ['first cover','second cover','capillary structure','cooling medium','first conductive member','first insulation layer'])assert.ok(c.elements.some(x=>x.elementName===name));assert.ok(c.relationships.some(x=>x.relationType==='connected_to'&&c.elements.find(y=>y.elementId===x.fromElementId).elementName==='edge sealing region'));assert.ok(c.unresolvedSpans.some(x=>x.reason.includes('Multi-component')));assert.ok(reviewCoverage(source(device),c,v).some(x=>x.status==='needs_review'));});
 test('synthetic method separates condition and actions while flagging branch linkage',()=>{const c=extractRuleFeatures(method),v=validateFeatureCandidate(c,method);assert.equal(c.technicalSubject.type,'Method');assert.equal(v.accepted,true);assert.doesNotMatch(c.elements[0].originalText,/determining/);const steps=c.limitations.filter(x=>x.limitationType==='Process Step');assert.ok(steps.some(x=>x.originalText.startsWith('determining (620)')));assert.ok(steps.some(x=>x.originalText.startsWith('initiating (625)')));assert.ok(steps.some(x=>x.originalText.startsWith('increasing a reading frequency')));assert.ok(steps.some(x=>x.originalText.startsWith('initiating (640)')));assert.ok(c.limitations.some(x=>x.limitationType==='Functional Limitation'&&x.originalText.includes('then')));assert.ok(c.unresolvedSpans.some(x=>x.reason.includes('branch')));assert.ok(reviewCoverage(source(method),c,v).some(x=>x.status==='needs_review'));});
 test('synthetic nested apparatus separates parts and preserves through-hole, wick and relative width',()=>{const c=extractRuleFeatures(structural),v=validateFeatureCandidate(c,structural);assert.equal(v.accepted,true);for(const name of ['support member','through hole','first plate','second plate','first flange portion','second flange portion','wick'])assert.equal(c.elements.filter(x=>x.elementName===name).length,1);assert.ok(c.limitations.some(x=>x.modifiesElementId===c.elements.find(y=>y.elementName==='support member').elementId&&x.originalText.includes('through hole')));assert.ok(c.limitations.some(x=>x.modifiesElementId===c.elements.find(y=>y.elementName==='second flange portion').elementId&&x.originalText.includes('less than the first width')));assert.ok(c.relationships.some(x=>x.originalText.includes('disposed through')&&x.semanticSupport==='not_assessed'));});
+
+test('synthetic enclosed wick placement remains exact unresolved evidence without inventing a relation',()=>{
+  for(const [id,placement] of [
+    ['EP9000211A1','the wick is accommodated through a closed space defined through coupling of the first plate and the second plate'],
+    ['EP9000212A1','a wick is disposed within a sealed cavity defined by coupling of the first plate and the second plate']
+  ]){
+    const doc=make(id,`An electronic device comprising a housing; a vapor chamber including a first plate, a second plate and a wick; wherein ${placement}.`);
+    const candidate=extractRuleFeatures(doc),validation=validateFeatureCandidate(candidate,doc);
+    assert.equal(validation.accepted,true);
+    const unresolved=candidate.unresolvedSpans.find(x=>x.sourceSpan.includes('defined')&&x.reason.includes('Enclosed placement'));
+    assert.ok(unresolved,placement);
+    assert.ok(placement.includes(unresolved.sourceSpan));
+    assert.ok(doc.independentClaims[0].includes(unresolved.sourceSpan));
+    assert.ok(reviewCoverage(source(doc),candidate,validation).some(x=>['needs_review','potential_gap'].includes(x.status)&&x.issues.some(i=>i.includes('Enclosed placement'))));
+    assert.ok(candidate.relationships.every(x=>!x.originalText.includes('closed space')&&!x.originalText.includes('sealed cavity')));
+  }
+});
+
+test('synthetic unrelated or already recognized structural wording does not gain a false enclosed-space warning',()=>{
+  const unrelated=make('EP9000213A1','An electronic device comprising a vapor chamber and a wick disposed in a recess; a closed space is mentioned as an optional housing example.');
+  const known=make('EP9000214A1','An electronic device comprising a housing; a vapor chamber disposed through a through hole; a wick disposed in a recess.');
+  for(const doc of [unrelated,known]){
+    const candidate=extractRuleFeatures(doc);
+    assert.ok(candidate.unresolvedSpans.every(x=>!x.reason.includes('Enclosed placement')));
+  }
+});
 test('synthetic cross-type records index and search without network or private stores',async()=>{await mkdir(resolve('data'),{recursive:true});const dir=await mkdtemp(join(resolve('data'),'patent-cross-type-mock-'));try{const datasetPath=join(dir,'dataset.json'),featureStorePath=join(dir,'features.json'),storePath=join(dir,'repository.json');await writeFile(datasetPath,JSON.stringify(freezeThermalDataset([material,device,method],[],[],'synthetic-cross-type-v1')));const repository=createPatentRepositoryService({datasetPath,featureStorePath,storePath});const result=await repository.runBatch([material,device,method].map(x=>x.publicationNumber));assert.equal(result.externalApi,false);assert.equal(result.paidCost,false);assert.equal(result.items.filter(x=>x.extractionRecordId).length,3,JSON.stringify(result.items));assert.equal((await repository.search({technicalSubject:'Method'})).total,1);assert.equal((await repository.search({element:'first cover'})).total,1);assert.equal((await repository.search({relationType:'connected_to'})).total,1);assert.equal((await repository.runBatch([device.publicationNumber])).counts.skipped_existing,1);assert.equal(JSON.parse(await readFile(featureStorePath,'utf8')).schemaVersion,'patent-feature-v1');}finally{await rm(dir,{recursive:true,force:true});}});

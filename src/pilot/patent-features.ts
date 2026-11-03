@@ -147,6 +147,16 @@ export function extractRuleFeatures(doc:ThermalDocument):FeatureCandidate {
   ] as const){const match=description.match(re);if(match)descriptionFindings.push({findingId:`D-${String(descriptionFindings.length+1).padStart(3,'0')}`,kind,text:match[0],evidence:evidence(doc,'description',match[0]),claimLimitation:false,semanticSupport:'not_assessed'});}
   const used=limitations.map(x=>x.originalText);
   const unresolvedSpans=parts.filter(part=>!elements.some(x=>part.includes(x.originalText))&&!used.some(x=>part.includes(x))).map(sourceSpan=>({sourceSpan,reason:'No reliable rule recognized a technical element or limitation.'}));
+  if(subjectType==='Apparatus'){
+    // A component's placement inside a space formed by other parts is a multi-party
+    // relationship. Retain its exact Claim 1 wording until the roles can be checked.
+    const enclosedPlacement=/\b(?:wick|capillary structure|cooling medium|working fluid)\b\s+(?:is\s+)?(?:accommodated|located|disposed)\s+(?:in|within|through)\s+(?:a|the)\s+(?:closed|sealed)\s+(?:space|cavity|chamber)\b(?:\s+defined\s+(?:through|by)\s+coupling\s+of\s+[^,;.\n]+)?/gi;
+    for(const match of claim.matchAll(enclosedPlacement)){
+      const sourceSpan=match[0];
+      if(!used.some(span=>span.includes(sourceSpan))&&!relationships.some(x=>x.originalText.includes(sourceSpan))&&!unresolvedSpans.some(x=>x.sourceSpan.includes(sourceSpan)))
+        unresolvedSpans.push({sourceSpan,reason:'Enclosed placement and the parts defining the space need human review; no relationship inferred.'});
+    }
+  }
   if(subjectType==='Apparatus'&&/\bfirst cover\b/i.test(claim))for(const pattern of [
     /first cover \(10\) is spaced from the effective region \(201\) of the second cover \(20\), to enclose an accommodating cavity \(101\)/i,
     /capillary structure \(30\) and the cooling medium \(40\) are located in the accommodating cavity \(101\)/i,
