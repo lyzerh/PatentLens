@@ -5,7 +5,7 @@ import {buildRequest,readModelText} from '../llm.js';
 import {estimateCost,costFromUsage} from './benchmark.ts';
 
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const model='grok-4.3',promptVersion='registry-summary-v1',maxOutputTokens=900,runCap=.05,totalCap=1;
+const model='grok-4.3',promptVersion='registry-summary-v1',maxOutputTokens=900;
 const defaultProvider=fetchImpl=>async(prompt,key)=>{
   const request=buildRequest({protocol:'responses',baseUrl:'https://api.x.ai/v1',model,maxOutputTokens,format:'json',reasoningEffort:'none'},prompt);
   let response;try{response=await fetchImpl(request.url,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(request.body),signal:AbortSignal.timeout(45000)});}catch{throw Error('PROVIDER_TRANSPORT_UNKNOWN');}
@@ -14,7 +14,9 @@ const defaultProvider=fetchImpl=>async(prompt,key)=>{
   const rawText=readModelText(envelope,'responses'),cost=costFromUsage(envelope.usage,model);
   return {rawText,usage:envelope.usage??null,costUsd:cost.usd,costKind:cost.kind==='actual'?'actual_cost':cost.kind==='estimated'?'estimated_cost':'unknown'};
 };
-export function createSummaryLlmService({readRegistry,storePath=resolve('data/summary-llm-audit/state.json'),getKey=()=>process.env.XAI_API_KEY,fetchImpl=fetch,provider=defaultProvider(fetchImpl),providerKind='xai',now=Date.now}={}){
+export function createSummaryLlmService({readRegistry,storePath=resolve('data/summary-llm-audit/state.json'),getKey=()=>process.env.XAI_API_KEY,fetchImpl=fetch,provider=defaultProvider(fetchImpl),providerKind='xai',runCapUsd=process.env.PATENT_SUMMARY_RUN_CAP_USD??'.05',totalCapUsd=process.env.PATENT_SUMMARY_TOTAL_CAP_USD??'1',now=Date.now}={}){
+  const runCap=Number(runCapUsd),totalCap=Number(totalCapUsd);
+  if(!Number.isFinite(runCap)||runCap<=0||!Number.isFinite(totalCap)||totalCap<=0||totalCap<runCap)throw Error('SUMMARY_BUDGET_CONFIG_INVALID');
   let quote=null,authorization=null,busy=false;
   const read=async()=>{try{return JSON.parse(await readFile(storePath,'utf8'));}catch(error){if(error.code==='ENOENT')return {version:1,attempts:[]};throw error;}};
   const update=async fn=>{await mkdir(dirname(storePath),{recursive:true});const lock=storePath+'.lock',handle=await open(lock,'wx',0o600);try{const state=await read(),result=await fn(state),temp=storePath+'.'+randomUUID()+'.tmp';try{await writeFile(temp,JSON.stringify(state),{flag:'wx',mode:0o600});await rename(temp,storePath);}catch(error){await unlink(temp).catch(()=>{});throw error;}return result;}finally{await handle.close();await unlink(lock);}};
