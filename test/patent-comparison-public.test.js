@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile,rm,mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createThermalDocument,freezeThermalDataset} from '../src/pilot/thermal.ts';
-import {extractRuleFeatures} from '../src/pilot/patent-features.ts';
+import {extractRuleFeatures,validateFeatureCandidate} from '../src/pilot/patent-features.ts';
 import {compareFeatureSources,compareLimits,validateComparison,createPatentComparisonService} from '../src/pilot/patent-comparison.ts';
 import {createApp} from '../src/server.js';
+import {buildComparisonReview} from '../public/claim-coverage.js';
 
 // Every patent and sentence here is synthetic/mock; no third-party full text or paid provider.
 const make=(id,claim)=>{const [,n,kind]=id.match(/^EP(\d+)([A-Z]\d)$/);return createThermalDocument({publicationNumber:id,title:'Synthetic mock patent '+id,abstract:'Synthetic mock abstract.',claims:[{number:'1',text:claim}],description:'[0001] Synthetic mock description.',sourceUrl:`https://data.epo.org/publication-server/rest/v1.2/patents/EP${n}NW${kind}/document.xml`,fetchedAt:'2026-01-01T00:00:00.000Z'},['synthetic_mock_fixture']);};
@@ -13,7 +14,7 @@ const materialA=make('EP9000001A1','A thermal interface material, comprising:\na
 const materialB=make('EP9000002A1','A thermal interface material, comprising:\na non-silicone resin comprising a phase change material;\na plasticizer present at between 30 and 55 percent by weight of the total composition;\nthermally conductive particulate filler wettable by the plasticizer and having a particle size of less than 20 µm,\nwherein the thermal interface material exhibits a thermal impedance of less than 0.7 °C * cm2/W, a melting point of between 40 and 80 °C.');
 const deviceA=make('EP9000003A1','A cooling apparatus comprising: a vapor chamber thermally coupled to a heat pipe; a cooling fan; a temperature sensor connected to a controller.');
 const deviceB=make('EP9000004A1','A cooling apparatus comprising: a heat pipe thermally coupled to a cooling fan; a temperature sensor connected to a controller.');
-const source=doc=>({doc,candidate:extractRuleFeatures(doc),recordId:null,revisionId:null});
+const source=doc=>{const candidate=extractRuleFeatures(doc),validation=validateFeatureCandidate(candidate,doc);return {doc,candidate,recordId:null,revisionId:null,validation};};
 test('exact named subject-to-component correspondence is only an evidence-backed candidate',()=>{
   const a=make('EP9000005A1','A vapor chamber, comprising a fictional wick.'),b=make('EP9000006A1','A cooling apparatus comprising: a vapor chamber; a fictional grille.');
   const result=compareFeatureSources(source(a),source(b));
@@ -27,6 +28,69 @@ test('exact named subject-to-component correspondence is only an evidence-backed
   const unrelated=make('EP9000007A1','A cooling apparatus comprising a heat pipe and a fictional grille.');
   assert.equal(compareFeatureSources(source(a),source(unrelated)).alignments.length,0);
 });
+test('display review preserves both sides, unpaired structures, evidence and partial Claim coverage',()=>{
+  const a=make('EP9000010A1','A vapor chamber, comprising a first plate, a wick disposed in a recess of the first plate, a housing containing the vapor chamber, and an insulating layer connected between the first plate and a conductive layer.');
+  const b=make('EP9000011A1','A vapor chamber, comprising a second plate, a wick accommodated through a closed space defined through coupling of the second plate and a cover, a vapor chamber containing a housing, and a temperature sensor connected to a controller.');
+  const left=source(a),right=source(b),comparison=compareFeatureSources(left,right);
+  const reviewA=buildComparisonReview('a',left,comparison),reviewB=buildComparisonReview('b',right,comparison);
+  assert.equal(left.validation.accepted,true);assert.equal(right.validation.accepted,true);
+  assert.ok(comparison.alignments.some(x=>x.comparisonResult==='undetermined'&&x.semanticSupport==='not_assessed'));
+  assert.ok(comparison.unmatchedFeatures.a.includes(left.candidate.elements.find(x=>x.elementName==='recess').elementId));
+  assert.ok(comparison.unmatchedFeatures.b.includes(right.candidate.elements.find(x=>x.elementName==='temperature sensor').elementId));
+  assert.equal(reviewA.elements.length,left.candidate.elements.length);assert.equal(reviewB.elements.length,right.candidate.elements.length);
+  assert.ok(reviewA.unpairedLimitations.some(x=>x.originalText.includes('wick disposed in a recess')));
+  assert.ok(reviewA.unpairedRelationships.some(x=>x.evidence.sourceSpan===x.originalText));
+  assert.ok(reviewB.unresolvedSpans.some(x=>x.sourceSpan.includes('closed space')&&b.independentClaims[0].includes(x.sourceSpan)));
+  assert.ok(reviewB.coverage.some(x=>['potential_gap','needs_review'].includes(x.status)&&x.sourceSpan.includes('closed space')&&x.issues.some(issue=>issue.includes('Enclosed placement'))));
+  assert.ok(reviewA.unmatchedElements.some(x=>x.elementName==='recess'&&x.evidence.sourceSpan===x.originalText));
+  assert.ok(reviewB.unmatchedElements.some(x=>x.elementName==='temperature sensor'&&x.evidence.sourceSpan===x.originalText));
+  assert.equal(comparison.limitationComparisons.length,0);
+  assert.equal(comparison.relationComparisons.length,0);
+});
+test('UAT-02 frozen Rules pair keeps the known element, limitation and relation coverage visible',async()=>{
+  const dataset=JSON.parse(await readFile(new URL('../data/smart-device-thermal-v1.3.json',import.meta.url),'utf8'));
+  const docA=dataset.entries.find(x=>x.publicationNumber==='EP4761489A1'),docB=dataset.entries.find(x=>x.publicationNumber==='EP4231797A1');
+  assert.ok(docA&&docB);
+  const left=source(docA),right=source(docB),comparison=compareFeatureSources(left,right);
+  const reviewA=buildComparisonReview('a',left,comparison),reviewB=buildComparisonReview('b',right,comparison);
+  assert.deepEqual([left.candidate.elements.length,left.candidate.limitations.length,left.candidate.relationships.length],[12,5,9]);
+  assert.deepEqual([right.candidate.elements.length,right.candidate.limitations.length,right.candidate.relationships.length],[14,8,4]);
+  assert.equal(comparison.alignments.length,1);assert.equal(comparison.limitationComparisons.length,0);assert.equal(comparison.relationComparisons.length,0);
+  assert.equal(reviewA.elements.length,12);assert.equal(reviewA.unpairedLimitations.length,5);assert.equal(reviewA.unpairedRelationships.length,9);
+  assert.equal(reviewB.elements.length,14);assert.equal(reviewB.unpairedLimitations.length,8);assert.equal(reviewB.unpairedRelationships.length,4);
+  assert.ok(reviewA.limitations.some(x=>x.originalText.includes('electrically connected')&&x.originalText.includes('away from the accommodating cavity')));
+  assert.ok(reviewB.limitations.some(x=>x.originalText.includes('second width less than the first width')));
+  assert.ok(reviewB.unresolvedSpans.some(x=>x.sourceSpan.includes('closed space')&&docB.independentClaims[0].includes(x.sourceSpan)));
+  assert.ok(reviewB.coverage.some(x=>x.status==='potential_gap'&&x.sourceSpan.includes('closed space')));
+});
+test('different containment directions remain two evidence-backed unpaired candidates',()=>{
+  const a=make('EP9000012A1','A thermal interface material comprising a non-silicone resin comprising a phase change material.');
+  const b=make('EP9000013A1','A thermal interface material comprising a phase change material comprising a non-silicone resin.');
+  const left=source(a),right=source(b);
+  const resin=right.candidate.elements.find(x=>x.elementName==='resin'),phase=right.candidate.elements.find(x=>x.elementName==='phase change material');
+  assert.ok(resin&&phase);
+  const span='phase change material comprising a non-silicone resin';
+  right.candidate.relationships=[{relationId:'R-099',relationType:'contains',fromElementId:phase.elementId,toElementId:resin.elementId,originalText:span,evidence:{publicationNumber:b.publicationNumber,section:'claims',sourceSpan:span,sourceUrl:b.sourceUrl,documentHash:b.contentHash,locator:'Claim 1'},semanticSupport:'not_assessed'}];
+  right.validation=validateFeatureCandidate(right.candidate,b);
+  assert.equal(right.validation.accepted,true);
+  const comparison=compareFeatureSources(left,right),reviewA=buildComparisonReview('a',left,comparison),reviewB=buildComparisonReview('b',right,comparison);
+  assert.equal(comparison.relationComparisons.length,0);
+  assert.ok(reviewA.unpairedRelationships.some(x=>x.originalText==='non-silicone resin comprising a phase change material'));
+  assert.ok(reviewB.unpairedRelationships.some(x=>x.originalText===span));
+  assert.ok(reviewA.unpairedRelationships.every(x=>a.independentClaims[0].includes(x.evidence.sourceSpan)));
+  assert.ok(reviewB.unpairedRelationships.every(x=>b.independentClaims[0].includes(x.evidence.sourceSpan)));
+});
+test('Rules and Grok candidates can be mixed while the shared name remains an unassessed candidate',()=>{
+  const rules=source(deviceA),grok=source(deviceB);
+  grok.candidate.extractionMode='llm_candidate';grok.candidate.reviewStatus='draft';grok.candidate.provenance='xai_grok_feature_candidate_unreviewed';
+  for(const element of grok.candidate.elements)element.confidenceStatus='llm_candidate';
+  grok.validation=validateFeatureCandidate(grok.candidate,deviceB);grok.recordId='synthetic-grok-record';
+  assert.equal(grok.validation.accepted,true);
+  const comparison=compareFeatureSources(rules,grok),view=buildComparisonReview('b',grok,comparison);
+  assert.ok(comparison.alignments.every(x=>x.alignmentStatus==='candidate'&&x.comparisonResult==='undetermined'&&x.semanticSupport==='not_assessed'));
+  assert.equal(grok.candidate.extractionMode,'llm_candidate');assert.equal(view.elements.length,grok.candidate.elements.length);
+  assert.equal(grok.candidate.reviewStatus,'draft');
+});
 async function fixture(){await mkdir(resolve('data'),{recursive:true});const dir=await mkdtemp(join(resolve('data'),'comparison-synthetic-'));const datasetPath=join(dir,'dataset.json'),storePath=join(dir,'comparisons.json'),featureStorePath=join(dir,'features.json');await writeFile(datasetPath,JSON.stringify(freezeThermalDataset([materialA,materialB,deviceA,deviceB],[],[],'synthetic-comparison-v1')));return {dir,datasetPath,storePath,featureStorePath,service:createPatentComparisonService({datasetPath,storePath,featureStorePath})};}
 
 test('synthetic material pair preserves ratios, units, bounds and source evidence',()=>{const c=compareFeatureSources(source(materialA),source(materialB));assert.equal(c.comparisonSchemaVersion,'patent-comparison-v1');assert.ok(c.diagnostics.every(x=>x.pass));assert.ok(c.alignments.length>=4);assert.ok(c.alignments.every(x=>x.comparisonResult==='undetermined'&&x.semanticSupport==='not_assessed'));const ratio=c.limitationComparisons.find(x=>x.limitationType==='Composition Ratio');assert.equal(ratio.referenceBasisA,'non-silicone resin');assert.equal(ratio.referenceBasisB,'total composition');assert.equal(ratio.comparisonResult,'undetermined');const particle=c.limitationComparisons.find(x=>x.originalTextA.includes('particle size'));assert.equal(particle.operatorA,'<');assert.equal(particle.operatorB,'<');assert.deepEqual([particle.valueA.upper,particle.valueB.upper],[25,20]);assert.equal(particle.comparisonResult,'different');assert.ok(c.limitationComparisons.some(x=>x.originalTextA.includes('thermal impedance')&&x.comparisonResult==='different'));});
@@ -35,5 +99,5 @@ test('one-to-many candidate stays ambiguous and unmatched rather than forced int
 test('numeric comparison checks strict endpoints, units, ratio basis and ambiguity',()=>{const a=source(materialA).candidate.limitations.find(x=>x.unit==='µm');const b=structuredClone(a);b.upperInclusive=true;assert.equal(compareLimits(a,b).result,'different');b.upperInclusive=false;b.unit='mm';assert.equal(compareLimits(a,b).result,'undetermined');b.unit=a.unit;b.numericStatus='ambiguous';assert.equal(compareLimits(a,b).result,'undetermined');const ratio=source(materialA).candidate.limitations.find(x=>x.limitationType==='Composition Ratio');const other=structuredClone(ratio);other.referenceBasis='total composition';assert.equal(compareLimits(ratio,other).result,'undetermined');});
 test('validator rejects cross-document quote, missing IDs, false equivalence and changed revision',()=>{const a=source(materialA),b=source(materialB),c=compareFeatureSources(a,b);const wrong=structuredClone(c);wrong.alignments[0].evidenceB=wrong.alignments[0].evidenceA;assert.ok(validateComparison(wrong,a,b).diagnostics.some(x=>x.code==='BOTH_EXACT'&&!x.pass));const ref=structuredClone(c);ref.alignments[0].featureBId='missing';assert.ok(validateComparison(ref,a,b).diagnostics.some(x=>x.code==='ALIGNMENT_IDS'&&!x.pass));const eq=structuredClone(c);eq.alignments[0].comparisonResult='equivalent';assert.ok(validateComparison(eq,a,b).diagnostics.some(x=>x.code==='EQUIVALENCE_REVIEW'&&!x.pass));const revision=structuredClone(c);revision.extractionRevisionIds.a='changed';assert.ok(validateComparison(revision,a,b).diagnostics.some(x=>x.code==='SOURCE_VERSIONS'&&!x.pass));});
 test('private comparison store retains machine original, append-only review and exports',async()=>{const f=await fixture();try{const c=await f.service.create(materialA.publicationNumber,materialB.publicationNumber);assert.equal(c.revisions.length,0);assert.equal(c.machine.reviewStatus,'machine_candidate');await assert.rejects(f.service.create(materialA.publicationNumber,materialB.publicationNumber),/ALREADY_EXISTS/);const edits=structuredClone(c.machine.alignments);edits[0].alignmentStatus='rejected';edits[0].alignmentRationale='Synthetic reviewer rejects correspondence.';const saved=await f.service.review(c.machine.comparisonId,'Synthetic Reviewer','review_draft',edits,'Synthetic rationale',null);assert.equal(saved.revisions.length,1);assert.equal(saved.machine.alignments[0].alignmentStatus,'candidate');await assert.rejects(f.service.review(c.machine.comparisonId,'Reviewer','review_draft',edits,'',null),/REVISION_CONFLICT/);const restarted=createPatentComparisonService({datasetPath:f.datasetPath,storePath:f.storePath,featureStorePath:f.featureStorePath});assert.equal((await restarted.load(c.machine.comparisonId)).revisions.length,1);const out=await restarted.exportRecord(c.machine.comparisonId);assert.equal(out.json.machine.reviewStatus,'machine_candidate');assert.match(out.markdown,/not Verified Gold/);assert.equal(JSON.parse(await readFile(f.storePath,'utf8')).schemaVersion,'patent-comparison-v1');}finally{await rm(f.dir,{recursive:true,force:true});}});
-test('comparison API is same-origin/CSRF protected and never calls network provider',async()=>{const f=await fixture();let paid=0;const app=createApp({thermalDatasetPath:f.datasetPath,featureStorePath:f.featureStorePath,comparisonStorePath:f.storePath,fetchImpl:async()=>{paid++;throw new Error('forbidden');}});await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));const root=`http://127.0.0.1:${app.address().port}`;try{const csrf=(await(await fetch(root+'/api/xai/settings/csrf')).json()).csrfToken;const post=(path,body={},headers={})=>fetch(root+'/api/patent-compare/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':csrf,Origin:root,...headers},body:JSON.stringify(body)});assert.equal((await fetch(root+'/patent-compare')).status,200);assert.equal((await post('list',{}, {'X-Patent-CSRF':'bad'})).status,403);assert.equal((await post('list',{}, {Origin:'https://evil.example'})).status,403);const response=await post('generate',{patentA:materialA.publicationNumber,patentB:materialB.publicationNumber});assert.equal(response.status,200);assert.equal(paid,0);}finally{app.closeAllConnections();await new Promise(resolve=>app.close(resolve));await rm(f.dir,{recursive:true,force:true});}});
-test('comparison page has bilingual controls and no paid route',async()=>{const html=await readFile(new URL('../public/patent-compare.html',import.meta.url),'utf8'),js=await readFile(new URL('../public/patent-compare.js',import.meta.url),'utf8'),locale=(await import('../public/i18n/compare.js')).default;for(const k of ['compare.title','compare.generate','compare.warning','compare.evidence'])assert.ok(locale.zh[k]&&locale.en[k]);assert.match(html,/id="patent-a"/);assert.match(html,/id="patent-b"/);assert.doesNotMatch(js,/api\.x\.ai|smoke-run|smoke-authorize/);});
+test('comparison API is same-origin/CSRF protected and never calls network provider',async()=>{const f=await fixture();let paid=0;const app=createApp({thermalDatasetPath:f.datasetPath,featureStorePath:f.featureStorePath,comparisonStorePath:f.storePath,fetchImpl:async()=>{paid++;throw new Error('forbidden');}});await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));const root=`http://127.0.0.1:${app.address().port}`;try{const csrf=(await(await fetch(root+'/api/xai/settings/csrf')).json()).csrfToken;const post=(path,body={},headers={})=>fetch(root+'/api/patent-compare/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':csrf,Origin:root,...headers},body:JSON.stringify(body)});assert.equal((await fetch(root+'/patent-compare')).status,200);assert.equal((await post('list',{}, {'X-Patent-CSRF':'bad'})).status,403);assert.equal((await post('list',{}, {Origin:'https://evil.example'})).status,403);const sourceResponse=await post('source',{publicationNumber:materialA.publicationNumber}),sourceValue=await sourceResponse.json();assert.equal(sourceResponse.status,200);assert.equal(sourceValue.validation.accepted,true);const response=await post('generate',{patentA:materialA.publicationNumber,patentB:materialB.publicationNumber});assert.equal(response.status,200);assert.equal(paid,0);}finally{app.closeAllConnections();await new Promise(resolve=>app.close(resolve));await rm(f.dir,{recursive:true,force:true});}});
+test('comparison page has bilingual coverage, source review and no paid route',async()=>{const html=await readFile(new URL('../public/patent-compare.html',import.meta.url),'utf8'),js=await readFile(new URL('../public/patent-compare.js',import.meta.url),'utf8'),locale=(await import('../public/i18n/compare.js')).default;for(const k of ['compare.title','compare.generate','compare.warning','compare.evidence','compare.unmatchedNotice','compare.coverageWarning','compare.providerModel'])assert.ok(locale.zh[k]&&locale.en[k]);for(const id of ['patent-a','patent-b','unpaired-limitations','unpaired-relationships','unmatched'])assert.match(html,new RegExp('id="'+id+'"'));assert.match(js,/buildComparisonReview/);assert.doesNotMatch(js,/api\.x\.ai|smoke-run|smoke-authorize/);});

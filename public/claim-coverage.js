@@ -54,3 +54,29 @@ export function compareCoverage(source, rules, grok) {
     return {claimSegment:item.claimSegment,rulesOnly,grokOnly,grouped};
   });
 }
+
+// Display-layer comparison hints only. These lists preserve candidates that
+// the cross-document matcher did not pair; they do not assert presence or absence.
+export function buildComparisonReview(side, source, comparison) {
+  if (!['a','b'].includes(side) || !source?.doc || !source?.candidate) throw new Error('INVALID_COMPARISON_REVIEW_SOURCE');
+  const candidate=source.candidate;
+  const pairedLimitations=new Set((comparison?.limitationComparisons??[]).map(x=>side==='a'?x.limitationA:x.limitationB));
+  const pairedRelationships=new Set((comparison?.relationComparisons??[]).map(x=>side==='a'?x.relationA:x.relationB));
+  const unmatchedIds=new Set(comparison?.unmatchedFeatures?.[side]??[]);
+  const coverage=source.validation?reviewCoverage({
+    publicationNumber:source.doc.publicationNumber,
+    documentHash:source.doc.contentHash,
+    sourceUrl:source.doc.sourceUrl,
+    claim1:source.doc.independentClaims?.[0]
+  },candidate,source.validation):[];
+  return {
+    elements:candidate.elements,
+    limitations:candidate.limitations,
+    relationships:candidate.relationships,
+    unresolvedSpans:candidate.unresolvedSpans??[],
+    unmatchedElements:candidate.elements.filter(x=>unmatchedIds.has(x.elementId)),
+    unpairedLimitations:comparison?candidate.limitations.filter(x=>!pairedLimitations.has(x.limitationId)):[],
+    unpairedRelationships:comparison?candidate.relationships.filter(x=>!pairedRelationships.has(x.relationId)):[],
+    coverage
+  };
+}
