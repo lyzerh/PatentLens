@@ -1,0 +1,473 @@
+{
+  "collectionId": "a4734327-e453-461e-98f5-05ddc1fc038c",
+  "title": "Synthetic enterprise research",
+  "description": "",
+  "createdAt": "2026-11-04T04:34:03.925Z",
+  "updatedAt": "2026-11-04T04:34:04.851Z",
+  "sourceDatasetId": "smart-device-thermal-v1:synthetic-portfolio-demo-v1",
+  "selectedPublications": [
+    "EP9000001A1",
+    "EP9000002A1"
+  ],
+  "selectedFeatureRecords": [
+    {
+      "publicationNumber": "EP9000001A1",
+      "extractionRecordId": "fedee510-0b8b-449d-bc9b-72bf01d9d7d9",
+      "revisionId": null
+    },
+    {
+      "publicationNumber": "EP9000002A1",
+      "extractionRecordId": "41100fa0-8da3-4db8-8b96-88f71e9f9b27",
+      "revisionId": null
+    }
+  ],
+  "optionalNotes": "",
+  "manualEntries": [
+    {
+      "recordId": "cd3f64c2b2b04c441a98",
+      "publicationNumber": "EP9000001A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+      "sourceHash": "22f710674e7eff1b845419b78b08b1a62503a2316dbcab2509513dbaa2aad97c",
+      "title": "Synthetic mock thermal interface material A",
+      "tags": [],
+      "tagVersion": 0,
+      "tagProvenance": "self_entered_unverified"
+    },
+    {
+      "recordId": "7d995393262cbea0578d",
+      "publicationNumber": "EP9000002A1",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+      "sourceHash": "9fb8e5d959c1c4ed50cb30ea9d3d3937118d4b4a91bae9e91a987838eb6affad",
+      "title": "Synthetic mock thermal interface material B",
+      "tags": [],
+      "tagVersion": 0,
+      "tagProvenance": "self_entered_unverified"
+    }
+  ],
+  "manualRevisions": [
+    {
+      "version": 1,
+      "at": "2026-11-04T04:34:03.967Z",
+      "editor": "Synthetic researcher",
+      "pair": [
+        "cd3f64c2b2b04c441a98",
+        "7d995393262cbea0578d"
+      ],
+      "notes": "Demonstration analyst notes — synthetic scenario",
+      "difference": "A uses a resin basis; B uses a total composition basis.",
+      "source": "manual",
+      "evidence": [
+        {
+          "recordId": "cd3f64c2b2b04c441a98",
+          "section": "claims",
+          "sourceSpan": "between 25 and 50 percent by weight of the non-silicone resin"
+        },
+        {
+          "recordId": "7d995393262cbea0578d",
+          "section": "claims",
+          "sourceSpan": "between 30 and 55 percent by weight of the total composition"
+        }
+      ]
+    }
+  ],
+  "featureSnapshots": [
+    {
+      "publicationNumber": "EP9000001A1",
+      "featureRecordId": "fedee510-0b8b-449d-bc9b-72bf01d9d7d9",
+      "revisionId": null,
+      "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+      "extractionMethod": "rules",
+      "reviewStatus": "machine_generated_unreviewed",
+      "technicalSubject": {
+        "type": "Material / Composition",
+        "originalText": "A thermal interface material, comprising: a non-silicone resin comprising a phase change material",
+        "evidence": {
+          "publicationNumber": "EP9000001A1",
+          "section": "claims",
+          "sourceSpan": "A thermal interface material, comprising: a non-silicone resin comprising a phase change material",
+          "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+          "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+          "locator": "Claim 1"
+        }
+      },
+      "elements": [
+        {
+          "elementId": "E-001",
+          "elementName": "thermal interface material",
+          "elementType": "claimed_subject",
+          "originalText": "thermal interface material",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "thermal interface material",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-002",
+          "elementName": "resin",
+          "elementType": "material",
+          "originalText": "non-silicone resin",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "non-silicone resin",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-003",
+          "elementName": "phase change material",
+          "elementType": "material",
+          "originalText": "phase change material",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "phase change material",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-004",
+          "elementName": "plasticizer",
+          "elementType": "material",
+          "originalText": "plasticizer",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "plasticizer",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-005",
+          "elementName": "particulate filler",
+          "elementType": "material",
+          "originalText": "thermally conductive particulate filler",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "thermally conductive particulate filler",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        }
+      ],
+      "limitations": [
+        {
+          "limitationId": "L-001",
+          "limitationType": "Material Constraint",
+          "originalText": "non-silicone resin",
+          "modifiesElementId": "E-002",
+          "lowerBound": null,
+          "upperBound": null,
+          "unit": null,
+          "lowerInclusive": null,
+          "upperInclusive": null,
+          "referenceBasis": null,
+          "numericStatus": "not_numeric",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "non-silicone resin",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          }
+        },
+        {
+          "limitationId": "L-002",
+          "limitationType": "Composition Ratio",
+          "originalText": "between 25 and 50 percent by weight of the non-silicone resin",
+          "modifiesElementId": "E-004",
+          "lowerBound": 25,
+          "upperBound": 50,
+          "unit": "percent by weight",
+          "lowerInclusive": true,
+          "upperInclusive": true,
+          "referenceBasis": "non-silicone resin",
+          "numericStatus": "parsed",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "between 25 and 50 percent by weight of the non-silicone resin",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          }
+        },
+        {
+          "limitationId": "L-003",
+          "limitationType": "Numerical Range",
+          "originalText": "particle size of less than 25 µm",
+          "modifiesElementId": "E-005",
+          "lowerBound": null,
+          "upperBound": 25,
+          "unit": "µm",
+          "lowerInclusive": null,
+          "upperInclusive": false,
+          "referenceBasis": null,
+          "numericStatus": "parsed",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "particle size of less than 25 µm",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "relationId": "R-001",
+          "relationType": "contains",
+          "fromElementId": "E-002",
+          "toElementId": "E-003",
+          "originalText": "non-silicone resin comprising a phase change material",
+          "evidence": {
+            "publicationNumber": "EP9000001A1",
+            "section": "claims",
+            "sourceSpan": "non-silicone resin comprising a phase change material",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000001NWA1/document.xml",
+            "documentHash": "daa525e03eb2677d66be1237f6fe338fd9b0a803baba95a5feee338bd821986c",
+            "locator": "Claim 1"
+          },
+          "semanticSupport": "not_assessed"
+        }
+      ],
+      "unresolvedSpans": [],
+      "coverage": {
+        "recognized": 3,
+        "total": 3,
+        "unresolved": 0
+      }
+    },
+    {
+      "publicationNumber": "EP9000002A1",
+      "featureRecordId": "41100fa0-8da3-4db8-8b96-88f71e9f9b27",
+      "revisionId": null,
+      "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+      "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+      "extractionMethod": "rules",
+      "reviewStatus": "machine_generated_unreviewed",
+      "technicalSubject": {
+        "type": "Material / Composition",
+        "originalText": "A thermal interface material, comprising: a non-silicone resin comprising a phase change material",
+        "evidence": {
+          "publicationNumber": "EP9000002A1",
+          "section": "claims",
+          "sourceSpan": "A thermal interface material, comprising: a non-silicone resin comprising a phase change material",
+          "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+          "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+          "locator": "Claim 1"
+        }
+      },
+      "elements": [
+        {
+          "elementId": "E-001",
+          "elementName": "thermal interface material",
+          "elementType": "claimed_subject",
+          "originalText": "thermal interface material",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "thermal interface material",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-002",
+          "elementName": "resin",
+          "elementType": "material",
+          "originalText": "non-silicone resin",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "non-silicone resin",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-003",
+          "elementName": "phase change material",
+          "elementType": "material",
+          "originalText": "phase change material",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "phase change material",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-004",
+          "elementName": "plasticizer",
+          "elementType": "material",
+          "originalText": "plasticizer",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "plasticizer",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        },
+        {
+          "elementId": "E-005",
+          "elementName": "particulate filler",
+          "elementType": "material",
+          "originalText": "thermally conductive particulate filler",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "thermally conductive particulate filler",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          },
+          "confidenceStatus": "rule_candidate"
+        }
+      ],
+      "limitations": [
+        {
+          "limitationId": "L-001",
+          "limitationType": "Material Constraint",
+          "originalText": "non-silicone resin",
+          "modifiesElementId": "E-002",
+          "lowerBound": null,
+          "upperBound": null,
+          "unit": null,
+          "lowerInclusive": null,
+          "upperInclusive": null,
+          "referenceBasis": null,
+          "numericStatus": "not_numeric",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "non-silicone resin",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          }
+        },
+        {
+          "limitationId": "L-002",
+          "limitationType": "Composition Ratio",
+          "originalText": "between 30 and 55 percent by weight of the total composition",
+          "modifiesElementId": "E-004",
+          "lowerBound": 30,
+          "upperBound": 55,
+          "unit": "percent by weight",
+          "lowerInclusive": true,
+          "upperInclusive": true,
+          "referenceBasis": "total composition",
+          "numericStatus": "parsed",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "between 30 and 55 percent by weight of the total composition",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          }
+        },
+        {
+          "limitationId": "L-003",
+          "limitationType": "Numerical Range",
+          "originalText": "particle size of less than 20 µm",
+          "modifiesElementId": "E-005",
+          "lowerBound": null,
+          "upperBound": 20,
+          "unit": "µm",
+          "lowerInclusive": null,
+          "upperInclusive": false,
+          "referenceBasis": null,
+          "numericStatus": "parsed",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "particle size of less than 20 µm",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "relationId": "R-001",
+          "relationType": "contains",
+          "fromElementId": "E-002",
+          "toElementId": "E-003",
+          "originalText": "non-silicone resin comprising a phase change material",
+          "evidence": {
+            "publicationNumber": "EP9000002A1",
+            "section": "claims",
+            "sourceSpan": "non-silicone resin comprising a phase change material",
+            "sourceUrl": "https://data.epo.org/publication-server/rest/v1.2/patents/EP9000002NWA1/document.xml",
+            "documentHash": "1ac5e414ca4eae27a01d907ddc049a8b198952e234a013676e33bc3934e5d4bd",
+            "locator": "Claim 1"
+          },
+          "semanticSupport": "not_assessed"
+        }
+      ],
+      "unresolvedSpans": [],
+      "coverage": {
+        "recognized": 3,
+        "total": 3,
+        "unresolved": 0
+      }
+    }
+  ],
+  "manualComparison": {
+    "version": 1,
+    "at": "2026-11-04T04:34:03.967Z",
+    "editor": "Synthetic researcher",
+    "pair": [
+      "cd3f64c2b2b04c441a98",
+      "7d995393262cbea0578d"
+    ],
+    "notes": "Demonstration analyst notes — synthetic scenario",
+    "difference": "A uses a resin basis; B uses a total composition basis.",
+    "source": "manual",
+    "evidence": [
+      {
+        "recordId": "cd3f64c2b2b04c441a98",
+        "section": "claims",
+        "sourceSpan": "between 25 and 50 percent by weight of the non-silicone resin"
+      },
+      {
+        "recordId": "7d995393262cbea0578d",
+        "section": "claims",
+        "sourceSpan": "between 30 and 55 percent by weight of the total composition"
+      }
+    ]
+  }
+}
