@@ -10,7 +10,7 @@ let csrf,manifest=null,preview=null,batch=null,searchResult=null,collection=null
 let llmQuote=null,llmAuthorization=null,llmStatus=null;
 const message=value=>{$('message').textContent=value;};
 const state=value=>t('repository.state.'+value);
-const guarded=fn=>async()=>{try{await fn();}catch(error){const key='collections.error.'+error.message;const translated=t(key);message(t('repository.error',{reason:translated===key?error.message:translated}));}};
+const guarded=fn=>{let running=false;return async()=>{if(running)return;running=true;try{await fn();}catch(error){const key='collections.error.'+error.message;const translated=t(key);message(t('repository.error',{reason:translated===key?error.message:translated}));}finally{running=false;}};};
 async function api(group,action,body={}){const response=await fetch('/api/'+group+'/'+action,{method:'POST',headers:{'Content-Type':'application/json','X-Patent-Client':'workbench','X-Patent-CSRF':csrf},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error?.message??'REQUEST_FAILED');return value;}
 const chosen=()=>[...document.querySelectorAll('#documents input:checked')].map(x=>x.value);
 const auditInspector=createAuditInspector($('llm-results'),attemptId=>api('patent-repository','llm-inspect',{attemptId}));

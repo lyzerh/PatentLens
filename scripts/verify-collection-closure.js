@@ -74,6 +74,13 @@ try{
   assert.equal(await readFile(paths.collectionStorePath,'utf8'),before);record('dependency_protection','PASS',await page.locator('#message').innerText());
   await page.getByRole('button',{name:/删除集合|Delete collection/}).click();await page.waitForFunction(()=>!document.querySelector('#collection-list')?.textContent?.includes('Synthetic renamed A'));
   assert.ok(dialogs.filter(d=>d.type==='confirm').length>=2);await page.waitForFunction(()=>document.querySelector('#manual-difference')?.value==='');assert.equal((await page.locator('#manual-research').innerText()).includes('版本 1'),false);record('delete_with_history_confirmed','PASS');
+  await page.locator('.collection-editor').evaluate(node=>node.open=true);
+  await page.locator('#collection-title').fill('Synthetic double click');
+  await page.locator('#collection-create').evaluate(button=>{button.click();button.click();});
+  await page.waitForFunction(()=>document.querySelector('#collection-list')?.selectedOptions[0]?.textContent?.includes('Synthetic double click'));
+  const duplicateState=JSON.parse(await readFile(paths.collectionStorePath,'utf8'));
+  assert.equal(Object.values(duplicateState.collections).filter(item=>item.title==='Synthetic double click').length,1);
+  record('duplicate_create_guard','PASS');
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:join(shots,'collections-390.png'),fullPage:true});
   await page.setViewportSize({width:1440,height:900});await page.screenshot({path:join(shots,'collections-1440.png'),fullPage:true});
   assert.ok(errors.every(x=>x.includes('400 (Bad Request)')),JSON.stringify(errors));assert.equal(externalCalls,0);record('responsive_console_network','PASS','Expected rejection produced HTTP 400; no JavaScript exception');
